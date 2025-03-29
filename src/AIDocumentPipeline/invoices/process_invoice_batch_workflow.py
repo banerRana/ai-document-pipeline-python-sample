@@ -41,7 +41,7 @@ async def process_invoice_batch_http(req: func.HttpRequest, client: df.DurableOr
 
 
 @bp.function_name(queue_trigger_name)
-@bp.queue_trigger(arg_name="msg", queue_name="invoices", connection="INVOICES_QUEUE_CONNECTION")
+@bp.queue_trigger(arg_name="msg", queue_name="invoices", connection="AZURE_STORAGE_QUEUES_CONNECTION_STRING")
 @bp.durable_client_input(client_name="client")
 async def process_invoice_batch_queue(msg: func.QueueMessage, client: df.DurableOrchestrationClient):
     """Starts a new instance of the ProcessInvoiceBatchWorkflow orchestration in response to a Storage queue message.

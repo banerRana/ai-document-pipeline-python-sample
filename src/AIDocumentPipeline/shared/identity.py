@@ -6,7 +6,7 @@ This module provides a default Azure credential that can be used by Azure SDK cl
 import os
 from azure.identity import DefaultAzureCredential
 
-managed_identity_client_id = os.environ.get("MANAGED_IDENTITY_CLIENT_ID", None)
+managed_identity_client_id = os.environ.get("AZURE_CLIENT_ID", None)
 
 default_credential = DefaultAzureCredential(
     exclude_environment_credential=True,
