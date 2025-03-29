@@ -1,6 +1,6 @@
 import { roleAssignmentInfo } from '../security/managed-identity.bicep'
-import { serverlessModelDeploymentInfo, serverlessModelDeploymentOutputInfo } from './ai-hub-model-serverless-endpoint.bicep'
 import { connectionInfo } from 'ai-hub-connection.bicep'
+import { diagnosticSettingsInfo } from '../management_governance/log-analytics-workspace.bicep'
 
 @description('Name of the resource.')
 param name string
@@ -39,17 +39,32 @@ param keyVaultId string
 @description('ID for the Application Insights associated with the AI Hub.')
 param applicationInsightsId string
 @description('ID for the Container Registry associated with the AI Hub.')
-param containerRegistryId string
+param containerRegistryId string?
 @description('ID for the Managed Identity associated with the AI Hub. Defaults to the system-assigned identity.')
 param identityId string?
 @description('Name for the AI Services resource to connect to.')
 param aiServicesName string
-@description('Serverless model deployments for the AI Hub.')
-param serverlessModels serverlessModelDeploymentInfo[] = []
 @description('Resource connections associated with the AI Hub.')
 param connections connectionInfo[] = []
 @description('Role assignments to create for the AI Hub instance.')
 param roleAssignments roleAssignmentInfo[] = []
+@description('Name of the Log Analytics Workspace to use for diagnostic settings.')
+param logAnalyticsWorkspaceName string?
+@description('Diagnostic settings to configure for the AI Hub instance. Defaults to all logs and metrics.')
+param diagnosticSettings diagnosticSettingsInfo = {
+  logs: [
+    {
+      categoryGroup: 'allLogs'
+      enabled: true
+    }
+  ]
+  metrics: [
+    {
+      category: 'AllMetrics'
+      enabled: true
+    }
+  ]
+}
 
 resource aiServices 'Microsoft.CognitiveServices/accounts@2024-04-01-preview' existing = {
   name: aiServicesName
@@ -112,18 +127,6 @@ module aiHubConnections 'ai-hub-connection.bicep' = [
   }
 ]
 
-module serverlessModelEndpoints 'ai-hub-model-serverless-endpoint.bicep' = [
-  for serverlessModel in serverlessModels: {
-    name: serverlessModel.name
-    params: {
-      name: serverlessModel.name
-      aiHubName: aiHub.name
-      model: serverlessModel.model
-      keyVaultConfig: serverlessModel.keyVaultConfig
-    }
-  }
-]
-
 resource assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [
   for roleAssignment in roleAssignments: {
     name: guid(aiHub.id, roleAssignment.principalId, roleAssignment.roleDefinitionId)
@@ -136,23 +139,27 @@ resource assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [
   }
 ]
 
+resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = if (logAnalyticsWorkspaceName != null) {
+  name: logAnalyticsWorkspaceName!
+}
+
+resource aiHubDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (logAnalyticsWorkspaceName != null) {
+  name: '${aiHub.name}-diagnostic-settings'
+  scope: aiHub
+  properties: {
+    workspaceId: logAnalyticsWorkspace.id
+    logs: diagnosticSettings!.logs
+    metrics: diagnosticSettings!.metrics
+  }
+}
+
 @description('ID for the deployed AI Hub resource.')
 output id string = aiHub.id
 @description('Name for the deployed AI Hub resource.')
 output name string = aiHub.name
 @description('Identity principal ID for the deployed AI Hub resource.')
 output identityPrincipalId string? = identityId == null ? aiHub.identity.principalId : identityId
-@description('Azure AI Service connection name associated with the deployed AI Hub resource.')
+@description('AI Services connection name for the deployed AI Hub resource.')
 output aiServicesConnectionName string = aiHub::aiServicesConnection.name
-@description('Azure OpenAI Service connection name associated with the deployed AI Hub resource.')
+@description('OpenAI specific connection name for the deployed AI Hub resource.')
 output openAIServicesConnectionName string = '${aiHub::aiServicesConnection.name}_aoai'
-@description('Serverless model deployments for the AI Hub.')
-output serverlessModelDeployments serverlessModelDeploymentOutputInfo[] = [
-  for (item, index) in serverlessModels: {
-    id: serverlessModelEndpoints[index].outputs.id
-    name: serverlessModelEndpoints[index].outputs.name
-    endpoint: serverlessModelEndpoints[index].outputs.endpoint
-    primaryKeySecretName: serverlessModelEndpoints[index].outputs.primaryKeySecretName
-    secondaryKeySecretName: serverlessModelEndpoints[index].outputs.secondaryKeySecretName
-  }
-]

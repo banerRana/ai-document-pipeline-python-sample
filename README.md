@@ -1,10 +1,13 @@
 # Azure AI Document Data Extraction Pipeline using Durable Functions (Python)
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/jamesmcroft/azure-ai-document-pipeline-python-sample?quickstart=1)
+
 This sample project demonstrates how to build a scalable, document data extraction pipeline by combining the capabilities of Durable Functions with various techniques for extraction using Azure AI services. The sample specifically processes structured invoices in PDF format. The sample can be adapted to process any structured or unstructured document format.
 
-This approach takes advantage of the following techniques for document data extraction:
+This approach takes advantage of the following techniques for document data processing:
 
-- [Using Azure OpenAI GPT-4o to extract structured JSON data from PDF documents by converting them to images](https://github.com/Azure-Samples/azure-openai-gpt-4-vision-pdf-extraction-sample)
+- [Document Classification with Azure OpenAI's GPT-4o Vision Capabilities](https://github.com/Azure-Samples/azure-ai-document-processing-samples/blob/main/samples/python/classification/document-classification-gpt-vision.ipynb)
+- [Document Extraction using Multi-Modal (Text and Vision) Capabilities combining Azure AI Document Intelligence and Azure OpenAI's GPT-4o](https://github.com/Azure-Samples/azure-ai-document-processing-samples/blob/main/samples/python/extraction/multimodal/document-extraction-gpt-text-and-vision.ipynb)
 
 ## Pre-requisites - Understanding
 
@@ -21,19 +24,37 @@ Before continuing with this sample, please ensure that you have a level of under
 - [Azure AI Services](https://learn.microsoft.com/en-us/azure/ai-services/what-are-ai-services)
 - [Azure Blob Storage](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction)
 - [Azure Storage Queues](https://learn.microsoft.com/en-us/azure/storage/queues/storage-queues-introduction)
+  - _Note: Any message queue with a supported Azure Functions trigger can be used to trigger the Durable Function workflow, including Azure Service Bus._
 - [Azure Container Apps](https://learn.microsoft.com/en-us/azure/azure-functions/functions-deploy-container-apps?tabs=acr%2Cbash&pivots=programming-language-csharp)
 
 ## Pre-requisites - Setup
 
-The sample repository comes with a [**Dev Container**](https://code.visualstudio.com/docs/remote/containers) that contains all the necessary tools and dependencies to run the sample. To use the Dev Container, you need to have the following tools installed on your local machine:
+The repository contains a [devcontainer](./.devcontainer/README.md) that contains all the necessary tools and dependencies to run the code.
+
+### Setup on GitHub Codespaces
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/jamesmcroft/azure-ai-document-pipeline-python-sample?quickstart=1)
+
+Once the Dev Container is up and running, continue to the [run the sample](#run-the-sample) section.
+
+### Setup on Local Machine
+
+To use the Dev Container, you need to have the following tools installed on your local machine:
 
 - Install [**Visual Studio Code**](https://code.visualstudio.com/download)
 - Install [**Docker Desktop**](https://www.docker.com/products/docker-desktop)
 - Install [**Remote - Containers**](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension for Visual Studio Code
 
-Additionally, you will require:
+To setup a local development environment, follow these steps:
 
-- An Azure subscription. If you don't have an Azure subscription, create an [account](https://azure.microsoft.com/en-us/).
+> [!IMPORTANT]
+> Ensure that Docker Desktop is running on your local machine.
+
+1. Clone the repository to your local machine.
+2. Open the repository in Visual Studio Code.
+3. Press `F1` to open the command palette and type `Dev Containers: Reopen in Container`.
+
+Once the Dev Container is up and running, continue to the [run the sample](#run-the-sample) section.
 
 ## Understanding the pipeline
 
@@ -102,11 +123,12 @@ To setup an environment locally, simply run the [Setup-Environment.ps1](./Setup-
 > Docker Desktop must be running to setup the necessary local development environment.
 
 ```powershell
-.\Setup-Environment.ps1 -DeploymentName <DeploymentName> -Location <Location> -IsLocal $true -SkipInfrastructure $false
+.\Setup-Environment.ps1 -DeploymentName <DeploymentName> -Location <Location> -IsLocal
 ```
 
 > [!NOTE]
-> The `-IsLocal` parameter is used to determine whether the complete containerized deployment is made in Azure, or whether to deploy the necessary components to Azure that will support a local development environment. The `-SkipInfrastructure` parameter is used to skip the deployment of the core infrastructure components if they are already deployed.
+> The `-SkipInfrastructure` parameter can be used to skip the deployment of the core infrastructure components if they are already deployed. This will use the deployment outputs for the core Azure infrastructure components to configure the local development environment settings.
+> E.g. `.\Setup-Environment.ps1 -DeploymentName <DeploymentName> -Location <Location> -IsLocal -SkipInfrastructure`
 
 When configured for local development, you will be granted the following role-based access to your identity scoped to the specific Azure resources:
 
@@ -134,11 +156,12 @@ With the local development environment setup, you can open the solution in Visua
 To setup an environment in Azure, simply run the [Setup-Environment.ps1](./Setup-Environment.ps1) script from the root of the project:
 
 ```powershell
-.\Setup-Environment.ps1 -DeploymentName <DeploymentName> -Location <Location> -IsLocal $false -SkipInfrastructure $false
+.\Setup-Environment.ps1 -DeploymentName <DeploymentName> -Location <Location>
 ```
 
 > [!NOTE]
-> The `-IsLocal` parameter is used to determine whether the complete containerized deployment is made in Azure, or whether to deploy the necessary components to Azure that will support a local development environment. The `-SkipInfrastructure` parameter is used to skip the deployment of the core infrastructure components if they are already deployed.
+> The `-SkipInfrastructure` parameter can be used to skip the deployment of the core infrastructure components if they are already deployed. This will skip the core infrastructure deployment and only deploy the application to the Azure Container Apps environment.
+> E.g. `.\Setup-Environment.ps1 -DeploymentName <DeploymentName> -Location <Location> -SkipInfrastructure`
 
 ### Running the document processing pipeline
 
@@ -166,7 +189,7 @@ Content-Type: application/json
 }
 ```
 
-To run in Azure, replace `http://localhost:7071` with the `containerAppInfo.value.url` value from the [`./infra/apps/AIDocumentPipeline/AppOutputs.json`](./infra/apps/AIDocumentPipeline/AppOutputs.json) file after deployment.
+To run in Azure, replace `http://localhost:7071` with the `appInfo.value.url` value from the [`./infra/apps/AIDocumentPipeline/AppOutputs.json`](./infra/apps/AIDocumentPipeline/AppOutputs.json) file after deployment.
 
 #### Via the Azure Storage queue
 

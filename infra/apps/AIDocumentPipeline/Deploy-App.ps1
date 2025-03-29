@@ -1,21 +1,3 @@
-<#
-.SYNOPSIS
-    Builds and deploys the AI Document Pipeline Azure Functions app to a Container App in an existing Azure environment.
-.DESCRIPTION
-    This script initiates the deployment of the app.bicep template to the current default Azure subscription,
-    determined by the Azure CLI. The infra/Deploy-Infrastructure.ps1 script must be run first to deploy the
-    core infrastructure to the Azure subscription required by this script.
-
-	Follow the instructions in the DeploymentGuide.md file at the root of this project to understand what this
-    script will deploy to your Azure subscription, and the step-by-step on how to run it.
-.PARAMETER InfrastructureOutputsPath
-    The path to the deployments outputs file from the infra/Deploy-Infrastructure.ps1 script.
-.EXAMPLE
-    .\Deploy-App.ps1 -InfrastructureOutputsPath "../../InfrastructureOutputs.json"
-.NOTES
-    Author: James Croft
-#>
-
 param
 (
     [Parameter(Mandatory = $true)]
@@ -24,11 +6,11 @@ param
 
 $InfrastructureOutputs = Get-Content -Path $InfrastructureOutputsPath -Raw | ConvertFrom-Json
 
-$Location = $InfrastructureOutputs.resourceGroupInfo.value.location
-$ResourceGroupName = $InfrastructureOutputs.resourceGroupInfo.value.name
-$WorkloadName = $InfrastructureOutputs.resourceGroupInfo.value.workloadName
-$ContainerRegistryName = $InfrastructureOutputs.containerRegistryInfo.value.name
-$CompletionModelDeploymentName = $InfrastructureOutputs.aiServicesInfo.value.modelDeploymentName
+$AzureLocation = $InfrastructureOutputs.environmentInfo.value.azureLocation
+$AzureResourceGroup = $InfrastructureOutputs.environmentInfo.value.azureResourceGroup
+$WorkloadName = $InfrastructureOutputs.environmentInfo.value.workloadName
+$ContainerRegistryName = $InfrastructureOutputs.environmentInfo.value.containerRegistryName
+$AzureOpenAIChatDeployment = $InfrastructureOutputs.environmentInfo.value.azureOpenAIChatDeployment
 
 $ContainerName = "ai-document-pipeline"
 $ContainerVersion = (Get-Date -Format "yyMMddHHmm")
@@ -54,12 +36,12 @@ docker push $AzureContainerImageName
 
 Write-Host "Deploying Azure Container Apps for ${ContainerName}..."
 
-$DeploymentOutputs = (az deployment group create --name ai-document-pipeline-app --resource-group $ResourceGroupName --template-file './app.bicep' `
-        --parameters '../../main.parameters.json' `
+$DeploymentOutputs = (az deployment group create --name ai-document-pipeline-app --resource-group $AzureResourceGroup --template-file './app.bicep' `
+        --parameters './app.bicepparam' `
         --parameters workloadName=$WorkloadName `
-        --parameters location=$Location `
+        --parameters location=$AzureLocation `
         --parameters containerImageName=$ContainerImageName `
-        --parameters openAICompletionModelName=$CompletionModelDeploymentName `
+        --parameters chatModelDeployment=$AzureOpenAIChatDeployment `
         --query properties.outputs -o json) | ConvertFrom-Json
 
 $DeploymentOutputs | ConvertTo-Json | Out-File -FilePath './AppOutputs.json' -Encoding utf8
