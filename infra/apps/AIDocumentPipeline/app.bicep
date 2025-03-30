@@ -56,7 +56,7 @@ resource containerAppsEnvironmentRef 'Microsoft.App/managedEnvironments@2024-03-
 }
 
 var functionsWebJobStorageVariableName = 'AzureWebJobsStorage'
-var invoicesConnectionStringVariableName = 'AZURE_STORAGE_QUEUES_CONNECTION_STRING'
+var documentsConnectionStringVariableName = 'AZURE_STORAGE_QUEUES_CONNECTION_STRING'
 var applicationInsightsConnectionStringSecretName = 'applicationinsightsconnectionstring'
 
 var applicationManagedIdentityName = '${abbrs.security.managedIdentity}${appResourceToken}'
@@ -179,11 +179,11 @@ module aiServicesIdentityRoleAssignment '../../security/resource-role-assignment
   }
 }
 
-var invoicesQueueName = 'invoices'
-module invoicesQueue '../../storage/storage-queue.bicep' = {
-  name: '${abbrs.storage.storageAccount}${resourceToken}-${invoicesQueueName}'
+var documentsQueueName = 'documents'
+module documentsQueue '../../storage/storage-queue.bicep' = {
+  name: '${abbrs.storage.storageAccount}${resourceToken}-${documentsQueueName}'
   params: {
-    name: invoicesQueueName
+    name: documentsQueueName
     storageAccountName: storageAccountRef.name
   }
 }
@@ -259,6 +259,10 @@ module containerApp '../../containers/container-app.bicep' = {
         value: applicationManagedIdentity.outputs.clientId
       }
       {
+        name: 'AZURE_AISERVICES_ENDPOINT'
+        value: aiServicesRef.properties.endpoint
+      }
+      {
         name: 'AZURE_OPENAI_ENDPOINT'
         value: aiServicesRef.properties.endpoint
       }
@@ -271,15 +275,15 @@ module containerApp '../../containers/container-app.bicep' = {
         value: storageAccountRef.name
       }
       {
-        name: '${invoicesConnectionStringVariableName}__accountName'
+        name: '${documentsConnectionStringVariableName}__accountName'
         value: storageAccountRef.name
       }
       {
-        name: '${invoicesConnectionStringVariableName}__credential'
+        name: '${documentsConnectionStringVariableName}__credential'
         value: 'managedidentity'
       }
       {
-        name: '${invoicesConnectionStringVariableName}__clientId'
+        name: '${documentsConnectionStringVariableName}__clientId'
         value: applicationManagedIdentity.outputs.clientId
       }
       {

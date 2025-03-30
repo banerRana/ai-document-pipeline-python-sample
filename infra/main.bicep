@@ -289,13 +289,13 @@ module storageAccount './storage/storage-account.bicep' = {
   }
 }
 
-// DEMO: Create a container in the storage account for processing invoice files
-var invoicesContainerName = 'invoices'
-module invoicesContainer 'storage/storage-blob-container.bicep' = {
-  name: '${storageAccountName}-${invoicesContainerName}'
+// DEMO: Create a container in the storage account for processing documents
+var documentsContainerName = 'documents'
+module documentsContainer 'storage/storage-blob-container.bicep' = {
+  name: '${storageAccountName}-${documentsContainerName}'
   scope: resourceGroup
   params: {
-    name: invoicesContainerName
+    name: documentsContainerName
     storageAccountName: storageAccount.outputs.name
   }
 }
@@ -411,5 +411,5 @@ output environmentInfo object = {
   azureOpenAIEndpoint: aiServices.outputs.openAIEndpoint
   azureOpenAIChatDeployment: chatModelDeployment.name
   azureStorageAccount: storageAccount.outputs.name
-  invoicesContainerName: invoicesContainerName
+  documentsContainerName: documentsContainerName
 }

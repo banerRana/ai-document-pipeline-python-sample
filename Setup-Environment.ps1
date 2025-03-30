@@ -33,6 +33,7 @@ if (-not $InfrastructureOutputs) {
     exit 1
 }
 
+$AzureAIServicesEndpoint = $InfrastructureOutputs.environmentInfo.value.azureAIServicesEndpoint
 $AzureOpenAIEndpoint = $InfrastructureOutputs.environmentInfo.value.azureOpenAIEndpoint
 $AzureOpenAIChatDeployment = $InfrastructureOutputs.environmentInfo.value.azureOpenAIChatDeployment
 $AzureStorageAccount = $InfrastructureOutputs.environmentInfo.value.azureStorageAccount
@@ -41,6 +42,7 @@ Write-Host "Updating ./src/AIDocumentPipeline/local.settings.json..."
 
 $LocalSettingsPath = './src/AIDocumentPipeline/local.settings.json'
 $LocalSettings = Get-Content -Path $LocalSettingsPath -Raw | ConvertFrom-Json
+$LocalSettings.Values.AZURE_AISERVICES_ENDPOINT = $AzureAIServicesEndpoint
 $LocalSettings.Values.AZURE_OPENAI_ENDPOINT = $AzureOpenAIEndpoint
 $LocalSettings.Values.AZURE_OPENAI_CHAT_DEPLOYMENT = $AzureOpenAIChatDeployment
 $LocalSettings.Values.AZURE_STORAGE_ACCOUNT = $AzureStorageAccount
