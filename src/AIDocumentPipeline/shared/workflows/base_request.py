@@ -1,7 +1,9 @@
-from shared.validation_result import ValidationResult
+from __future__ import annotations
+from pydantic import BaseModel
+from shared.workflows.validation_result import ValidationResult
 
 
-class BaseRequest():
+class BaseRequest(BaseModel):
     """Defines the base class for requests passed to a workflow operation, including orchestration and activity functions."""
 
     def validate(self) -> ValidationResult:

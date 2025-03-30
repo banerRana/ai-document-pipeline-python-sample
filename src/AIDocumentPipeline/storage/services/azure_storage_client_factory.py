@@ -1,3 +1,4 @@
+from typing import Optional
 import re
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient
@@ -44,7 +45,7 @@ class AzureStorageClientFactory:
             container_name, blob_name)
         return blob_client.download_blob().readall()
 
-    def get_blobs_by_folder_at_root(self, storage_account_name: str, container_name: str, regex_filter: str | None = None) -> dict[str, list[str]]:
+    def get_blobs_by_folder_at_root(self, storage_account_name: str, container_name: str, regex_filter: Optional[str] = None) -> dict[str, list[str]]:
         """Retrieves a list of blob names grouped by folder at the root level of the container.
 
         Any blobs in the root of the container are grouped by the folder name.
