@@ -5,8 +5,8 @@ This module provides the blueprint for an Azure Function activity that classifie
 
 from __future__ import annotations
 from pydantic import Field
-from documents.services.document_data_classifier import DocumentDataClassifier, DocumentDataClassifierOptions
-from documents.models.document_classification import Classifications, ClassificationDefinitions
+from documents.services.document_data_classifier import DocumentDataClassifier, DocumentDataClassifierOptions, ClassificationConfidenceResult
+from documents.models.document_classification import ClassificationDefinitions
 from shared.workflows.base_request import BaseRequest
 from shared.workflows.validation_result import ValidationResult
 from storage.services.azure_storage_client_factory import AzureStorageClientFactory
@@ -14,7 +14,6 @@ import shared.identity as identity
 from shared import app_settings
 import azure.durable_functions as df
 import logging
-from typing import Optional
 
 name = "ClassifyDocument"
 bp = df.Blueprint()
@@ -24,7 +23,7 @@ document_classifier = DocumentDataClassifier(identity.default_credential)
 
 @bp.function_name(name)
 @bp.activity_trigger(input_name="input", activity=name)
-def run(input: Request) -> Optional[Classifications]:
+def run(input: Request) -> ClassificationConfidenceResult:
     """Classifies a document using Azure OpenAI.
 
     :param input: The request containing the container name and blob name of the document.

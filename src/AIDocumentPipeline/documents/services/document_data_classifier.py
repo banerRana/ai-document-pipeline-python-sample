@@ -3,8 +3,11 @@ from pdf2image import convert_from_bytes
 import base64
 from openai import AzureOpenAI
 import io
-from typing import Optional
 from documents.models.document_classification import Classifications, ClassificationDefinitions
+from shared.confidence.openai_confidence import evaluate_confidence as evaluate_confidence_openai
+from shared.confidence.confidence_result import ConfidenceResult, OVERALL_CONFIDENCE_KEY
+
+ClassificationConfidenceResult = ConfidenceResult[Classifications | None]
 
 
 class DocumentDataClassifierOptions:
@@ -49,7 +52,7 @@ class DocumentDataClassifier:
 
         self.credential = credential
 
-    def from_bytes(self, document_bytes: bytes, options: DocumentDataClassifierOptions) -> Optional[Classifications]:
+    def from_bytes(self, document_bytes: bytes, options: DocumentDataClassifierOptions) -> ClassificationConfidenceResult:
         """Classifies the specified document bytes using an Azure OpenAI model.
 
         :param document_bytes: The byte array content of the document to classify data from.
@@ -96,7 +99,19 @@ class DocumentDataClassifier:
             logprobs=True
         )
 
-        return classify_completion.choices[0].message.parsed
+        response_obj = classify_completion.choices[0].message.parsed
+        response_obj_dict = response_obj.model_dump()
+
+        confidence_openai = evaluate_confidence_openai(
+            extract_result=response_obj_dict,
+            choice=classify_completion.choices[0]
+        )
+
+        return ClassificationConfidenceResult(
+            data=response_obj,
+            confidence_scores=confidence_openai,
+            overall_confidence=confidence_openai[OVERALL_CONFIDENCE_KEY],
+        )
 
     def __get_openai_client__(self, options: DocumentDataClassifierOptions) -> AzureOpenAI:
         token_provider = get_bearer_token_provider(

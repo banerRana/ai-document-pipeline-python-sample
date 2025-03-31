@@ -6,6 +6,50 @@ This project is a customizable template for building and deploying AI-powered do
 
 ## Table of Contents
 
+- [Why use this project?](#why-use-this-project)
+- [Key features](#key-features)
+- [Understanding the Pipeline](#understanding-the-pipeline)
+  - [Flow](#flow)
+  - [Python Pipeline Specifics](#python-pipeline-specifics)
+  - [Azure Services](#azure-services)
+- [Example pipeline output](#example-pipeline-output)
+- [Pre-built Classification & Extraction Scenarios](#pre-built-classification--extraction-scenarios)
+- [Additional Use Cases](#additional-use-cases)
+- [Setup](#setup)
+  - [Setup on GitHub Codespaces](#setup-on-github-codespaces)
+  - [Setup on Local Machine](#setup-on-local-machine)
+- [Run the sample](#run-the-sample)
+  - [Setup the local environment](#setup-the-local-environment)
+  - [Setup the complete Azure environment](#setup-the-complete-azure-environment)
+  - [Testing the document processing pipeline](#testing-the-document-processing-pipeline)
+    - [Via the HTTP trigger](#via-the-http-trigger)
+    - [Via the Azure Storage queue](#via-the-azure-storage-queue)
+- [FAQ](#faq)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Why use this project?
+
+Many organizations are looking to automate manual document processing tasks that are time-consuming and error-prone. While it is possible to automate these tasks using existing tools and services, they often require significant effort to set up and maintain.
+
+Large language models have emerged as a powerful tool for general-purpose document processing tasks, able to handle any variety of document type and structure. Utilizing models with multimodal capabilities, such as Azure OpenAI's GPT-4o, enhances the accuracy and reliability of classifying and extracting structure data from documents by incorporating both text and image data.
+
+This project provides the techniques and patterns to combine the capabilities of traditional OCR analysis with the power of LLMs to build a robust document processing pipeline.
+
+## Key features
+
+- [**Durable Functions orchestration**](https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-overview?tabs=in-process%2Cnodejs-v3%2Cv1-model&pivots=python): The project uses Durable Functions to orchestrate the document processing pipeline, allowing for stateful workflows and parallel processing of documents.
+- [**Scalable containerized hosting**](https://learn.microsoft.com/en-us/azure/azure-functions/functions-deploy-container-apps?tabs=acr%2Cbash&pivots=programming-language-python): The project is designed to be deployed as a containerized application using Azure Container Apps, allowing for easy scaling and management of the document processing pipeline.
+- **Document data processing**: Many of the core activites for document processing are included by default, and require minimal configuration to customize to your use cases. These include:
+  - [**Document data classifier**](./src/AIDocumentPipeline/documents/services/document_data_classifier.py): A service that uses Azure OpenAI's GPT-4o model to classify documents based on their content. This service can be used to classify documents into any categories you define.
+  - [**Document data extractor**](./src/AIDocumentPipeline/documents/services/document_data_extractor.py): A service that combines Azure OpenAI's GPT-4o model with Azure AI Document Intelligence to extract structured data from documents using a multimodal approach, combining text and images. This service can be used to extract any structured data you define from documents using Pydantic models to define the expected output schema.
+- **Model confidence scores**: Combining Azure AI Document Intelligence's model internal confidence scores with Azure OpenAI's GPT-4o `logprobs` and structured outputs features, the pipeline is able to provide a confidence score for the overall document classification and extraction process. This allows you to validate the accuracy of the results and take action if the confidence score is below a certain threshold, such as sending alerts or raising exceptions for human review.
+- **Data validation**: Data is validated at every step of the process, including sub-orchestrations, ensuring that you not only receive the final output, but also the intermediate data at every step of the process.
+- **OpenTelemetry**: The pipeline is configured to also support OpenTelemetry for gathering logs, metrics, and traces of the pipeline. This allows for easy monitoring and debugging of the pipeline, as well as integration with Azure Monitor and other observability tools.
+- **Flexible configuration**: Using Durable Functions and separating out concerns to individual activities, the pipeline can be easily configured to support any document processing use case. The modular and extensible approach allows you to add or remove activities as needed.
+- **Secure backend**: Azure Managed Identity and Azure RBAC least privilege access is used to secure the pipeline and ensure that only authorized services can access the Azure resources used in the pipeline.
+- **Infrastructure-as-code**: Azure Bicep modules and PowerShell deployment scripts are provided to define the Azure infrastructure for the document processing pipeline, allowing for easy deployment and management of the resources required.
+
 ## Understanding the Pipeline
 
 ![Azure AI Document Processing Pipeline](./assets/Flow.png)
@@ -55,105 +99,87 @@ Before continuing with this project, please ensure that you have understanding o
 - [Azure User-Assigned Managed Identity](https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview-for-developers?tabs=portal%2Cdotnet), used to authenticate the service deployed in the Azure Container Apps environment to securely access other Azure services without key-based authentication, including the Azure Storage account and Azure OpenAI service.
 - [Azure Bicep](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/overview?tabs=bicep), used to create a repeatable infrastructure deployment for the Azure resources.
 
-## Key features
-
-- [**Durable Functions orchestration**](https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-functions-overview?tabs=in-process%2Cnodejs-v3%2Cv1-model&pivots=python): The project uses Durable Functions to orchestrate the document processing pipeline, allowing for stateful workflows and parallel processing of documents.
-- [**Scalable containerized hosting**](https://learn.microsoft.com/en-us/azure/azure-functions/functions-deploy-container-apps?tabs=acr%2Cbash&pivots=programming-language-python): The project is designed to be deployed as a containerized application using Azure Container Apps, allowing for easy scaling and management of the document processing pipeline.
-- **Document data processors**: Many of the core activites for document processing are included by default, and require minimal configuration to customize to your use cases. These include:
-  - [**Document data classifier**](./src/AIDocumentPipeline/documents/services/document_data_classifier.py): A service that uses Azure OpenAI's GPT-4o model to classify documents based on their content. This service can be used to classify documents into any categories you define.
-  - [**Document data extractor**](./src/AIDocumentPipeline/documents/services/document_data_extractor.py): A service that combines Azure OpenAI's GPT-4o model with Azure AI Document Intelligence to extract structured data from documents using a multimodal approach, combining text and images. This service can be used to extract any structured data you define from documents using Pydantic models to define the expected output schema.
-- **Data validation**: Data is validated at every step of the process, including sub-orchestrations, ensuring that you not only receive the final output, but also the intermediate data at every step of the process.
-- **OpenTelemetry**: The pipeline is configured to also support OpenTelemetry for gathering logs, metrics, and traces of the pipeline. This allows for easy monitoring and debugging of the pipeline, as well as integration with Azure Monitor and other observability tools.
-- **Flexible configuration**: Using Durable Functions and separating out concerns to individual activities, the pipeline can be easily configured to support any document processing use case. The modular and extensible approach allows you to add or remove activities as needed.
-- **Secure backend**: Azure Managed Identity and Azure RBAC least privilege access is used to secure the pipeline and ensure that only authorized services can access the Azure resources used in the pipeline.
-- **Infrastructure-as-code**: Azure Bicep modules and PowerShell deployment scripts are provided to define the Azure infrastructure for the document processing pipeline, allowing for easy deployment and management of the resources required.
-
-## Why use this project?
-
-Many organizations are looking to automate manual document processing tasks that are time-consuming and error-prone. While it is possible to automate these tasks using existing tools and services, they often require significant effort to set up and maintain.
-
-Large language models have emerged as a powerful tool for general-purpose document processing tasks, able to handle any variety of document type and structure. Utilizing models with multimodal capabilities, such as Azure OpenAI's GPT-4o, enhances the accuracy and reliability of classifying and extracting structure data from documents by incorporating both text and image data.
-
-This project provides the techniques and patterns to combine the capabilities of traditional OCR analysis with the power of LLMs to build a robust document processing pipeline.
-
 ## Example pipeline output
 
-Below is an example [invoice](./tests/InvoiceBatch/SharpConsulting/2024-05-16.pdf) that needs to be processed by the [document processing pipeline](./src/AIDocumentPipeline/documents/workflows/process_document_workflow.py). By combining the document's text from the Azure AI Document Intelligence `prebuilt-layout` analysis with the document page images using the Azure OpenAI GPT-4o model, the pipeline is able to extract structured data from the document with high accuracy and confidence.
+Below is an example [invoice](./tests/InvoiceBatch/SharpConsulting/2024-05-16.pdf) that needs to be processed by the [document processing pipeline](./src/AIDocumentPipeline/documents/workflows/process_document_workflow.py). By combining the document's text from the Azure AI Document Intelligence `prebuilt-layout` analysis with the document page images using the Azure OpenAI GPT-4o model, the pipeline is able to extract structured data from the document with high accuracy and confidence. For more information on how the confidence scores are calculated, see the [FAQ](#how-are-confidence-scores-calculated) section.
 
 ![Example Invoice](./assets/Invoice.png)
 
 ```json
 {
-  "customer_name": "Sharp Consulting",
-  "customer_tax_id": null,
-  "customer_address": {
-    "street": "73 Regal Way",
-    "city": "Leeds",
-    "state": null,
-    "postal_code": "LS1 5AB",
-    "country": "UK"
-  },
-  "shipping_address": null,
-  "purchase_order": "15931",
-  "invoice_id": "3847193",
-  "invoice_date": null,
-  "due_date": "2024-05-24",
-  "vendor_name": "NEXGEN",
-  "vendor_address": null,
-  "vendor_tax_id": null,
-  "remittance_address": null,
-  "subtotal": null,
-  "total_discount": null,
-  "total_tax": null,
-  "invoice_total": {
-    "currency_code": "GBP",
-    "amount": 293.52
-  },
-  "payment_term": null,
-  "items": [
-    {
-      "product_code": "MA197",
-      "description": "STRETCHWRAP ROLL",
-      "quantity": 5,
-      "tax": null,
-      "unit_price": {
-        "currency_code": "GBP",
-        "amount": 16.62
-      },
-      "total": {
-        "currency_code": "GBP",
-        "amount": 83.1
-      }
+  "data": {
+    "customer_name": "Sharp Consulting",
+    "customer_tax_id": null,
+    "customer_address": {
+      "street": "73 Regal Way",
+      "city": "Leeds",
+      "state": null,
+      "postal_code": "LS1 5AB",
+      "country": "UK"
     },
-    {
-      "product_code": "ST4086",
-      "description": "BALLPOINT PEN MED.",
-      "quantity": 10,
-      "tax": null,
-      "unit_price": {
-        "currency_code": "GBP",
-        "amount": 2.49
-      },
-      "total": {
-        "currency_code": "GBP",
-        "amount": 24.9
-      }
+    "shipping_address": null,
+    "purchase_order": "15931",
+    "invoice_id": "3847193",
+    "invoice_date": null,
+    "due_date": "2024-05-24",
+    "vendor_name": "NEXGEN",
+    "vendor_address": null,
+    "vendor_tax_id": null,
+    "remittance_address": null,
+    "subtotal": null,
+    "total_discount": null,
+    "total_tax": null,
+    "invoice_total": {
+      "currency_code": "GBP",
+      "amount": 293.52
     },
-    {
-      "product_code": "JF9912413BF",
-      "description": "BUBBLE FILM ROLL CL.",
-      "quantity": 12,
-      "tax": null,
-      "unit_price": {
-        "currency_code": "GBP",
-        "amount": 15.46
+    "payment_term": null,
+    "items": [
+      {
+        "product_code": "MA197",
+        "description": "STRETCHWRAP ROLL",
+        "quantity": 5,
+        "tax": null,
+        "unit_price": {
+          "currency_code": "GBP",
+          "amount": 16.62
+        },
+        "total": {
+          "currency_code": "GBP",
+          "amount": 83.1
+        }
       },
-      "total": {
-        "currency_code": "GBP",
-        "amount": 185.52
+      {
+        "product_code": "ST4086",
+        "description": "BALLPOINT PEN MED.",
+        "quantity": 10,
+        "tax": null,
+        "unit_price": {
+          "currency_code": "GBP",
+          "amount": 2.49
+        },
+        "total": {
+          "currency_code": "GBP",
+          "amount": 24.9
+        }
+      },
+      {
+        "product_code": "JF9912413BF",
+        "description": "BUBBLE FILM ROLL CL.",
+        "quantity": 12,
+        "tax": null,
+        "unit_price": {
+          "currency_code": "GBP",
+          "amount": 15.46
+        },
+        "total": {
+          "currency_code": "GBP",
+          "amount": 185.52
+        }
       }
-    }
-  ]
+    ]
+  },
+  "overall_confidence": 0.9886610106263585
 }
 ```
 
@@ -331,6 +357,23 @@ az storage message put `
 ```
 
 The `--account-name` parameter should be replaced with the name of the Azure Storage account deployed in the environment found in the `environmentInfo.value.azureStorageAccount` value from the [`./infra/InfrastructureOutputs.json`](./infra/InfrastructureOutputs.json) file after deployment.
+
+## FAQ
+
+### How are confidence scores calculated?
+
+For Azure OpenAI, confidence scores can be calculated by first enabling the `logprobs` feature in the model request. This will return the log probabilities of the tokens generated by the model, which can be used to calculate a confidence score for structured outputs of the model by comparing the key-value pairs to their generated tokens log probabilities.
+
+> [!NOTE]
+> See the [`openai_confidence`](./src/AIDocumentPipeline/shared/confidence/openai_confidence.py) module for the implementation of calculating the confidence score for the Azure OpenAI model using a structured output.
+
+> [!IMPORTANT]
+> Do not use prompting to generate confidence scores as part of the generated output, as this will not be a reliable source of truth. The `logprobs` feature is the only reliable technique, using the model's internal mechanisms for evaluating the probability of the tokens that it generates.
+
+For Azure AI Document Intelligence, confidence scores are automatically calculated and returned by models for the words detected in the document. These scores can be combined with the Azure OpenAI model confidence scores to calculate an overall confidence score when combining the two techniques for higher accuracy extractions.
+
+> [!NOTE]
+> See the [`document_intelligence_confidence`](./src/AIDocumentPipeline/shared/confidence/document_intelligence_confidence.py) module for the implementation of calculating the confidence score for the Azure AI Document Intelligence model using a structured output.
 
 ## Contributing
 

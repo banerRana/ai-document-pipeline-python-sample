@@ -6,10 +6,16 @@ import io
 from typing import TypeVar, Optional
 from azure.ai.documentintelligence import DocumentIntelligenceClient
 from azure.ai.documentintelligence.models import AnalyzeResult, DocumentContentFormat
+from shared.confidence.confidence_utils import merge_confidence_values
+from shared.confidence.openai_confidence import evaluate_confidence as evaluate_confidence_openai
+from shared.confidence.document_intelligence_confidence import evaluate_confidence as evaluate_confidence_di
+from shared.confidence.confidence_result import ConfidenceResult, OVERALL_CONFIDENCE_KEY
 
 ResponseFormatT = TypeVar(
     "ResponseFormatT"
 )
+
+ExtractionConfidenceResult = ConfidenceResult[ResponseFormatT | None]
 
 
 class DocumentDataExtractorOptions:
@@ -51,7 +57,7 @@ class DocumentDataExtractor:
 
         self.credential = credential
 
-    def from_bytes(self, document_bytes: bytes, response_format: type[ResponseFormatT], options: DocumentDataExtractorOptions) -> Optional[ResponseFormatT]:
+    def from_bytes(self, document_bytes: bytes, response_format: type[ResponseFormatT], options: DocumentDataExtractorOptions) -> ExtractionConfidenceResult:
         """Extracts structured data from the specified document bytes by converting the document to images and using an Azure OpenAI model to extract the data.
 
         :param document_bytes: The byte array content of the document to extract data from.
@@ -124,7 +130,31 @@ class DocumentDataExtractor:
             logprobs=True
         )
 
-        return completion.choices[0].message.parsed
+        response_obj = completion.choices[0].message.parsed
+        response_obj_dict = response_obj.model_dump()
+
+        confidence_openai = evaluate_confidence_openai(
+            extract_result=response_obj_dict,
+            choice=completion.choices[0]
+        )
+
+        if di_client:
+            confidence_di = evaluate_confidence_di(
+                extract_result=response_obj_dict,
+                analyze_result=result
+            )
+            confidence = merge_confidence_values(
+                confidence_a=confidence_di,
+                confidence_b=confidence_openai
+            )
+        else:
+            confidence = confidence_openai
+
+        return ExtractionConfidenceResult(
+            data=response_obj,
+            confidence_scores=confidence,
+            overall_confidence=confidence[OVERALL_CONFIDENCE_KEY]
+        )
 
     def __get_openai_client__(self, options: DocumentDataExtractorOptions) -> AzureOpenAI:
         token_provider = get_bearer_token_provider(

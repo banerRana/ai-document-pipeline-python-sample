@@ -10,6 +10,7 @@ from invoices.models.invoice import Invoice
 from shared.workflows.base_request import BaseRequest
 from shared.workflows.validation_result import ValidationResult
 from storage.services.azure_storage_client_factory import AzureStorageClientFactory
+from shared.confidence.confidence_result import ConfidenceResult
 import shared.identity as identity
 from shared import app_settings
 import azure.durable_functions as df
@@ -24,7 +25,7 @@ document_extractor = DocumentDataExtractor(identity.default_credential)
 
 @bp.function_name(name)
 @bp.activity_trigger(input_name="input", activity=name)
-def run(input: Request) -> Optional[Invoice]:
+def run(input: Request) -> ConfidenceResult[Invoice]:
     """Extracts invoice data from a document using Azure OpenAI.
 
     :param input: The request containing the container name and blob name of the document.

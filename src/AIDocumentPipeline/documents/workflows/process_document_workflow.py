@@ -8,20 +8,18 @@ from invoices.activities import validate_invoice
 from invoices.models.invoice import Invoice
 from storage.activities import write_bytes_to_blob
 from invoices.activities import extract_invoice
+from shared.confidence.confidence_result import ConfidenceResult
 from shared.workflows.workflow_result import WorkflowResult
 from documents.activities import classify_document
 from documents.models.document_classification import Classifications, ClassificationDefinitions, ClassificationDefinition
 from documents.models.document_folder import DocumentFolder
-from documents.models.document_batch_request import DocumentBatchRequest
 import azure.durable_functions as df
-from azure.durable_functions.models.Task import TaskBase
-import azure.functions as func
-import logging
-from documents.activities import get_document_folders
 from shared import app_settings
 
 name = "ProcessDocumentWorkflow"
 bp = df.Blueprint()
+
+CONFIDENCE_THRESHOLD = 0.8
 
 
 @bp.function_name(name)
@@ -42,7 +40,7 @@ def run(context: df.DurableOrchestrationContext):
     # Step 3: Process each file
     for document in input.document_file_names:
         # Classify the document
-        classification: Classifications = yield context.call_activity(
+        classification: ConfidenceResult[Classifications | None] = yield context.call_activity(
             classify_document.name,
             classify_document.Request(
                 container_name=input.container_name,
@@ -63,7 +61,7 @@ def run(context: df.DurableOrchestrationContext):
                         ),
                     ])))
 
-        if not classification:
+        if not classification or not classification.data:
             result.add_error(
                 classify_document.name,
                 f"Failed to classify document {document}.")
@@ -84,20 +82,30 @@ def run(context: df.DurableOrchestrationContext):
                 f"Failed to store classification for {document}.")
             continue
 
-        if len(classification.page_classifications) == 0:
+        if classification.overall_confidence < CONFIDENCE_THRESHOLD:
+            result.add_error(
+                classify_document.name,
+                f"Document {document} classified with low confidence {classification.overall_confidence}.")
+            continue
+
+        result.add_message(
+            classify_document.name,
+            f"Document {document} classified with confidence {classification.overall_confidence}.")
+
+        if len(classification.data.page_classifications) == 0:
             result.add_message(
                 classify_document.name,
                 f"Document {document} has no valid classifications.")
             continue
 
-        for page_classification in classification.page_classifications:
+        for page_classification in classification.data.page_classifications:
             result.add_message(
                 classify_document.name,
                 f"Document {document} classified as {page_classification.classification} from page {page_classification.image_range_start} to {page_classification.image_range_end}.")
 
             # If the document is classified as an invoice, extract the invoice data
             if page_classification.classification == "Invoice":
-                invoice: Invoice = yield context.call_activity(
+                invoice: ConfidenceResult[Invoice | None] = yield context.call_activity(
                     extract_invoice.name,
                     extract_invoice.Request(
                         container_name=input.container_name,
@@ -105,7 +113,7 @@ def run(context: df.DurableOrchestrationContext):
                         page_range_start=page_classification.image_range_start,
                         page_range_end=page_classification.image_range_end))
 
-                if not invoice:
+                if not invoice or not invoice.data:
                     result.add_error(
                         extract_invoice.name,
                         f"Failed to extract invoice data for {document} from page {page_classification.image_range_start} to {page_classification.image_range_end}.")
@@ -126,11 +134,21 @@ def run(context: df.DurableOrchestrationContext):
                         f"Failed to store invoice data for {document} from page {page_classification.image_range_start} to {page_classification.image_range_end}.")
                     continue
 
+                if invoice.overall_confidence < CONFIDENCE_THRESHOLD:
+                    result.add_error(
+                        extract_invoice.name,
+                        f"Invoice {document} extracted with low confidence {invoice.overall_confidence}.")
+                    continue
+
+                result.add_message(
+                    extract_invoice.name,
+                    f"Invoice {document} extracted with confidence {invoice.overall_confidence}.")
+
                 invoice_validation: validate_invoice.Result = yield context.call_activity(
                     validate_invoice.name,
                     validate_invoice.Request(
                         name=document,
-                        data=invoice))
+                        data=invoice.data))
 
                 result.merge(invoice_validation)
 
