@@ -41,11 +41,11 @@ resource hub 'Microsoft.MachineLearningServices/workspaces@2024-04-01-preview' e
     name: connection.name
     properties: {
       category: connection.category
-      target: connection.target
-      isSharedToAll: connection.isSharedToAll
-      authType: connection.authType
-      credentials: connection.credentials
-      metadata: connection.metadata
+      target: connection.?target
+      isSharedToAll: connection.?isSharedToAll
+      authType: connection.?authType
+      credentials: connection.?credentials
+      metadata: connection.?metadata
     }
   }
 }

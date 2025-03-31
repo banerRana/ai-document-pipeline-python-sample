@@ -1,6 +1,6 @@
 import { roleAssignmentInfo } from '../security/managed-identity.bicep'
-import { serverlessModelDeploymentInfo, serverlessModelDeploymentOutputInfo } from './ai-hub-model-serverless-endpoint.bicep'
 import { connectionInfo } from 'ai-hub-connection.bicep'
+import { diagnosticSettingsInfo } from '../management_governance/log-analytics-workspace.bicep'
 
 @description('Name of the resource.')
 param name string
@@ -29,12 +29,27 @@ param publicNetworkAccess string = 'Enabled'
 param systemDatastoresAuthMode string = 'identity'
 @description('ID for the Managed Identity associated with the AI Hub project. Defaults to the system-assigned identity.')
 param identityId string?
-@description('Serverless model deployments for the AI Hub project.')
-param serverlessModels serverlessModelDeploymentInfo[] = []
 @description('Resource connections associated with the AI Hub project.')
 param connections connectionInfo[] = []
 @description('Role assignments to create for the AI Hub project instance.')
 param roleAssignments roleAssignmentInfo[] = []
+@description('Name of the Log Analytics Workspace to use for diagnostic settings.')
+param logAnalyticsWorkspaceName string?
+@description('Diagnostic settings to configure for the AI Hub project instance. Defaults to all logs and metrics.')
+param diagnosticSettings diagnosticSettingsInfo = {
+  logs: [
+    {
+      categoryGroup: 'allLogs'
+      enabled: true
+    }
+  ]
+  metrics: [
+    {
+      category: 'AllMetrics'
+      enabled: true
+    }
+  ]
+}
 
 resource aiHub 'Microsoft.MachineLearningServices/workspaces@2024-04-01-preview' existing = {
   name: aiHubName
@@ -77,18 +92,6 @@ module aiHubConnections 'ai-hub-connection.bicep' = [
   }
 ]
 
-module serverlessModelEndpoints 'ai-hub-model-serverless-endpoint.bicep' = [
-  for serverlessModel in serverlessModels: {
-    name: serverlessModel.name
-    params: {
-      name: serverlessModel.name
-      aiHubName: aiHubProject.name
-      model: serverlessModel.model
-      keyVaultConfig: serverlessModel.keyVaultConfig
-    }
-  }
-]
-
 resource assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [
   for roleAssignment in roleAssignments: {
     name: guid(aiHubProject.id, roleAssignment.principalId, roleAssignment.roleDefinitionId)
@@ -101,19 +104,23 @@ resource assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [
   }
 ]
 
+resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = if (logAnalyticsWorkspaceName != null) {
+  name: logAnalyticsWorkspaceName!
+}
+
+resource aiHubProjectDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (logAnalyticsWorkspaceName != null) {
+  name: '${aiHubProject.name}-diagnostic-settings'
+  scope: aiHubProject
+  properties: {
+    workspaceId: logAnalyticsWorkspace.id
+    logs: diagnosticSettings!.logs
+    metrics: diagnosticSettings!.metrics
+  }
+}
+
 @description('ID for the deployed AI Hub project resource.')
 output id string = aiHubProject.id
 @description('Name for the deployed AI Hub project resource.')
 output name string = aiHubProject.name
 @description('Identity principal ID for the deployed AI Hub project resource.')
 output identityPrincipalId string? = identityId == null ? aiHubProject.identity.principalId : identityId
-@description('Serverless model deployments for the AI Hub project.')
-output serverlessModelDeployments serverlessModelDeploymentOutputInfo[] = [
-  for (item, index) in serverlessModels: {
-    id: serverlessModelEndpoints[index].outputs.id
-    name: serverlessModelEndpoints[index].outputs.name
-    endpoint: serverlessModelEndpoints[index].outputs.endpoint
-    primaryKeySecretName: serverlessModelEndpoints[index].outputs.primaryKeySecretName
-    secondaryKeySecretName: serverlessModelEndpoints[index].outputs.secondaryKeySecretName
-  }
-]

@@ -120,8 +120,23 @@ param disableLocalAuth bool = true
 param raiPolicies raiPolicyInfo[] = []
 @description('Role assignments to create for the AI Services instance.')
 param roleAssignments roleAssignmentInfo[] = []
-@description('Diagnostic settings to configure for the AI Services instance.')
-param diagnosticSettings diagnosticSettingsInfo?
+@description('Name of the Log Analytics Workspace to use for diagnostic settings.')
+param logAnalyticsWorkspaceName string?
+@description('Diagnostic settings to configure for the AI Services instance. Defaults to all logs and metrics.')
+param diagnosticSettings diagnosticSettingsInfo = {
+  logs: [
+    {
+      categoryGroup: 'allLogs'
+      enabled: true
+    }
+  ]
+  metrics: [
+    {
+      category: 'AllMetrics'
+      enabled: true
+    }
+  ]
+}
 
 resource aiServices 'Microsoft.CognitiveServices/accounts@2024-04-01-preview' = {
   name: name
@@ -162,82 +177,82 @@ resource raiPolicy 'Microsoft.CognitiveServices/accounts/raiPolicies@2024-04-01-
       contentFilters: [
         {
           name: 'violence'
-          allowedContentLevel: raiPolicy.prompt.?violence.?allowedContentLevel ?? 'High'
-          blocking: raiPolicy.prompt.?violence.?blocking ?? true
-          enabled: raiPolicy.prompt.?violence.?enabled ?? true
+          allowedContentLevel: raiPolicy.?prompt.?violence.?allowedContentLevel ?? 'High'
+          blocking: raiPolicy.?prompt.?violence.?blocking ?? true
+          enabled: raiPolicy.?prompt.?violence.?enabled ?? true
           source: 'Prompt'
         }
         {
           name: 'violence'
-          allowedContentLevel: raiPolicy.completion.?violence.?allowedContentLevel ?? 'High'
-          blocking: raiPolicy.completion.?violence.?blocking ?? true
-          enabled: raiPolicy.completion.?violence.?enabled ?? true
+          allowedContentLevel: raiPolicy.?completion.?violence.?allowedContentLevel ?? 'High'
+          blocking: raiPolicy.?completion.?violence.?blocking ?? true
+          enabled: raiPolicy.?completion.?violence.?enabled ?? true
           source: 'Completion'
         }
         {
           name: 'hate'
-          allowedContentLevel: raiPolicy.prompt.?hate.?allowedContentLevel ?? 'High'
-          blocking: raiPolicy.prompt.?hate.?blocking ?? true
-          enabled: raiPolicy.prompt.?hate.?enabled ?? true
+          allowedContentLevel: raiPolicy.?prompt.?hate.?allowedContentLevel ?? 'High'
+          blocking: raiPolicy.?prompt.?hate.?blocking ?? true
+          enabled: raiPolicy.?prompt.?hate.?enabled ?? true
           source: 'Prompt'
         }
         {
           name: 'hate'
-          allowedContentLevel: raiPolicy.completion.?hate.?allowedContentLevel ?? 'High'
-          blocking: raiPolicy.completion.?hate.?blocking ?? true
-          enabled: raiPolicy.completion.?hate.?enabled ?? true
+          allowedContentLevel: raiPolicy.?completion.?hate.?allowedContentLevel ?? 'High'
+          blocking: raiPolicy.?completion.?hate.?blocking ?? true
+          enabled: raiPolicy.?completion.?hate.?enabled ?? true
           source: 'Completion'
         }
         {
           name: 'sexual'
-          allowedContentLevel: raiPolicy.prompt.?sexual.?allowedContentLevel ?? 'High'
-          blocking: raiPolicy.prompt.?sexual.?blocking ?? true
-          enabled: raiPolicy.prompt.?sexual.?enabled ?? true
+          allowedContentLevel: raiPolicy.?prompt.?sexual.?allowedContentLevel ?? 'High'
+          blocking: raiPolicy.?prompt.?sexual.?blocking ?? true
+          enabled: raiPolicy.?prompt.?sexual.?enabled ?? true
           source: 'Prompt'
         }
         {
           name: 'sexual'
-          allowedContentLevel: raiPolicy.completion.?sexual.?allowedContentLevel ?? 'High'
-          blocking: raiPolicy.completion.?sexual.?blocking ?? true
-          enabled: raiPolicy.completion.?sexual.?enabled ?? true
+          allowedContentLevel: raiPolicy.?completion.?sexual.?allowedContentLevel ?? 'High'
+          blocking: raiPolicy.?completion.?sexual.?blocking ?? true
+          enabled: raiPolicy.?completion.?sexual.?enabled ?? true
           source: 'Completion'
         }
         {
           name: 'selfharm'
-          allowedContentLevel: raiPolicy.prompt.?selfharm.?allowedContentLevel ?? 'High'
-          blocking: raiPolicy.prompt.?selfharm.?blocking ?? true
-          enabled: raiPolicy.prompt.?selfharm.?enabled ?? true
+          allowedContentLevel: raiPolicy.?prompt.?selfharm.?allowedContentLevel ?? 'High'
+          blocking: raiPolicy.?prompt.?selfharm.?blocking ?? true
+          enabled: raiPolicy.?prompt.?selfharm.?enabled ?? true
           source: 'Prompt'
         }
         {
           name: 'selfharm'
-          allowedContentLevel: raiPolicy.completion.?selfharm.?allowedContentLevel ?? 'High'
-          blocking: raiPolicy.completion.?selfharm.?blocking ?? true
-          enabled: raiPolicy.completion.?selfharm.?enabled ?? true
+          allowedContentLevel: raiPolicy.?completion.?selfharm.?allowedContentLevel ?? 'High'
+          blocking: raiPolicy.?completion.?selfharm.?blocking ?? true
+          enabled: raiPolicy.?completion.?selfharm.?enabled ?? true
           source: 'Completion'
         }
         {
           name: 'jailbreak'
-          blocking: raiPolicy.prompt.?jailbreak.?blocking ?? true
-          enabled: raiPolicy.prompt.?jailbreak.?enabled ?? true
+          blocking: raiPolicy.?prompt.?jailbreak.?blocking ?? true
+          enabled: raiPolicy.?prompt.?jailbreak.?enabled ?? true
           source: 'Prompt'
         }
         {
           name: 'indirect_attack'
-          blocking: raiPolicy.prompt.?indirect_attack.?blocking ?? false
-          enabled: raiPolicy.prompt.?indirect_attack.?enabled ?? false
+          blocking: raiPolicy.?prompt.?indirect_attack.?blocking ?? false
+          enabled: raiPolicy.?prompt.?indirect_attack.?enabled ?? false
           source: 'Prompt'
         }
         {
           name: 'protected_material_text'
-          blocking: raiPolicy.completion.?protected_material_text.?blocking ?? true
-          enabled: raiPolicy.completion.?protected_material_text.?enabled ?? true
+          blocking: raiPolicy.?completion.?protected_material_text.?blocking ?? true
+          enabled: raiPolicy.?completion.?protected_material_text.?enabled ?? true
           source: 'Completion'
         }
         {
           name: 'protected_material_code'
-          blocking: raiPolicy.completion.?protected_material_code.?blocking ?? false
-          enabled: raiPolicy.completion.?protected_material_code.?enabled ?? true
+          blocking: raiPolicy.?completion.?protected_material_code.?blocking ?? false
+          enabled: raiPolicy.?completion.?protected_material_code.?enabled ?? true
           source: 'Completion'
         }
       ]
@@ -277,11 +292,15 @@ resource assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [
   }
 ]
 
-resource aiServicesDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (diagnosticSettings != null) {
+resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = if (logAnalyticsWorkspaceName != null) {
+  name: logAnalyticsWorkspaceName!
+}
+
+resource aiServicesDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (logAnalyticsWorkspaceName != null) {
   name: '${aiServices.name}-diagnostic-settings'
   scope: aiServices
   properties: {
-    workspaceId: diagnosticSettings!.workspaceId
+    workspaceId: logAnalyticsWorkspace.id
     logs: diagnosticSettings!.logs
     metrics: diagnosticSettings!.metrics
   }

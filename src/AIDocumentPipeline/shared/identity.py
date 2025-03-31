@@ -1,12 +1,10 @@
-"""Identity helper for Azure SDK clients.
+"""Defines the default Azure credential for the application to authenticate with Azure services via Python SDKs.
 
-This module provides a default Azure credential that can be used by Azure SDK clients to authenticate with Azure services.
+When running locally, the Azure CLI credentials are used. When running in Azure, the application's managed identity is used.
 """
 
-import os
 from azure.identity import DefaultAzureCredential
-
-managed_identity_client_id = os.environ.get("MANAGED_IDENTITY_CLIENT_ID", None)
+from shared import app_settings
 
 default_credential = DefaultAzureCredential(
     exclude_environment_credential=True,
@@ -17,5 +15,5 @@ default_credential = DefaultAzureCredential(
     exclude_powershell_credential=True,
     exclude_workload_identity_credential=True,
     process_timeout=10,
-    managed_identity_client_id=managed_identity_client_id
+    managed_identity_client_id=app_settings.azure_client_id
 )
