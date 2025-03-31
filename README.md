@@ -211,6 +211,9 @@ The repository contains a [devcontainer](./.devcontainer/README.md) that contain
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/jamesmcroft/azure-ai-document-pipeline-python-sample?quickstart=1)
 
+> [!NOTE]
+> After the environment has loaded, you may need to run the following command in the terminal to install the necessary Python dependencies: `pip --disable-pip-version-check --no-cache-dir install --user -r src/AIDocumentPipeline/requirements.txt`
+
 Once the Dev Container is up and running, continue to the [run the sample](#run-the-sample) section.
 
 ### Setup on Local Machine
@@ -229,6 +232,9 @@ To setup a local development environment, follow these steps:
 1. Clone the repository to your local machine.
 2. Open the repository in Visual Studio Code.
 3. Press `F1` to open the command palette and type `Dev Containers: Reopen in Container`.
+
+> [!NOTE]
+> After the environment has loaded, you may need to run the following command in the terminal to install the necessary Python dependencies: `pip --disable-pip-version-check --no-cache-dir install --user -r src/AIDocumentPipeline/requirements.txt`
 
 Once the Dev Container is up and running, continue to the [run the sample](#run-the-sample) section.
 
