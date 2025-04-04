@@ -2,12 +2,13 @@
 
 choco install azd -y
 choco install github-desktop -y
-choco install docker-desktop -y
+#choco install docker-desktop -y
 
 git clone https://github.com/givenscj/azure-ai-document-pipeline-python-sample
 
 cd .\azure-ai-document-pipeline-python-sample\
 
-az login --use-device-code
-azd login
+az login --use-device-code -tenant 'your-tenant-id'
+azd auth login --tenant-id 'your-tenant-id'
 
+#wsl --install
