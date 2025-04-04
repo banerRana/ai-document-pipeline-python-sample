@@ -163,11 +163,21 @@ resource cognitiveServicesOpenAIUserRole 'Microsoft.Authorization/roleDefinition
   name: roles.ai.cognitiveServicesOpenAIUser
 }
 
+resource appConfigDataOwnerRole 'Microsoft.Authorization/roleDefinitions@2022-05-01-preview' existing = {
+  name: roles.configuration.appConfigurationDataOwner
+}
+
+
 module aiServicesIdentityRoleAssignment '../../security/resource-role-assignment.json' = {
   name: 'aiServicesIdentityRoleAssignment'
   params: {
     resourceId: aiServicesRef.id
     roleAssignments: [
+      {
+        principalId: applicationManagedIdentity.outputs.principalId
+        roleDefinitionId: appConfigDataOwnerRole.id
+        principalType: 'ServicePrincipal'
+      }
       {
         principalId: applicationManagedIdentity.outputs.principalId
         roleDefinitionId: cognitiveServicesUserRole.id

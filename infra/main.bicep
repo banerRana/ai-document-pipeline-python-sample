@@ -310,11 +310,32 @@ resource contributorRole 'Microsoft.Authorization/roleDefinitions@2022-05-01-pre
   name: roles.general.contributor
 }
 
+resource appConfigDataOwnerRole 'Microsoft.Authorization/roleDefinitions@2022-05-01-preview' existing = {
+  scope: resourceGroup
+  name: roles.configuration.appConfigurationDataOwner
+}
+
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2024-03-01' = {
   name: resourceGroupName
   location: location
   tags: union(tags, {})
 }
+
+var appConfigDataOwnerIdentityAssignments = [
+  for identity in identities: {
+    principalId: identity.principalId
+    roleDefinitionId: appConfigDataOwnerRole.id
+    principalType: identity.principalType
+  }
+]
+
+var allConfigDataOwnerIdentityAssignments = concat(appConfigDataOwnerIdentityAssignments, [
+  {
+    principalId: aiServiceManagedIdentity.outputs.principalId
+    roleDefinitionId: appConfigDataOwnerRole.id
+    principalType: 'ServicePrincipal'
+  }
+])
 
 var contributorIdentityAssignments = [
   for identity in identities: {
@@ -329,7 +350,7 @@ module resourceGroupRoleAssignment './security/resource-group-role-assignment.bi
   name: resourceGroupRoleAssignmentName
   scope: resourceGroup
   params: {
-    roleAssignments: concat(contributorIdentityAssignments, [])
+    roleAssignments: concat(contributorIdentityAssignments, [], allConfigDataOwnerIdentityAssignments)
   }
 }
 

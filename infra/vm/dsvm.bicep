@@ -96,8 +96,8 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2024-11-01' = {
     storageProfile: {
       imageReference: {
         publisher: 'microsoft-dsvm'
-        offer: 'dsvm-win-2019'
-        sku: 'winserver-2019'
+        offer: 'dsvm-win-2022'
+        sku: 'winserver-2022'
         version: 'latest'
       }
       osDisk: {
