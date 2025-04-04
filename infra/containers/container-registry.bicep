@@ -6,6 +6,11 @@ param name string
 param location string = resourceGroup().location
 @description('Tags for the resource.')
 param tags object = {}
+@description('MSI Id.')
+param identityId string?
+
+param containerRegistryReuse bool
+param existingContainerRegistryResourceGroupName string
 
 @export()
 @description('SKU information for Container Registry.')
@@ -29,12 +34,22 @@ param sku skuInfo = {
 @description('Role assignments to create for the Container Registry.')
 param roleAssignments roleAssignmentInfo[] = []
 
-resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = {
+resource existingContainerRegistry 'Microsoft.ContainerRegistry/registries@2024-11-01-preview' existing = if (containerRegistryReuse) {
+  scope: resourceGroup(existingContainerRegistryResourceGroupName)
+  name: name
+}
+
+resource containerRegistry 'Microsoft.ContainerRegistry/registries@2024-11-01-preview' = if (!containerRegistryReuse) {
   name: name
   location: location
   tags: tags
   identity: {
-    type: 'SystemAssigned'
+    type: identityId == null ? 'SystemAssigned' : 'UserAssigned'
+    userAssignedIdentities: identityId == null
+      ? null
+      : {
+          '${identityId}': {}
+        }
   }
   sku: sku
   properties: {
@@ -56,8 +71,8 @@ resource assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [
 ]
 
 @description('ID for the deployed Container Registry resource.')
-output id string = containerRegistry.id
+output id string = containerRegistryReuse ? existingContainerRegistry.id: containerRegistry.id
 @description('Name for the deployed Container Registry resource.')
-output name string = containerRegistry.name
+output name string = containerRegistryReuse ? existingContainerRegistry.name : containerRegistry.name
 @description('Login server for the deployed Container Registry resource.')
-output loginServer string = containerRegistry.properties.loginServer
+output loginServer string = containerRegistryReuse ? existingContainerRegistry.properties.loginServer : containerRegistry.properties.loginServer

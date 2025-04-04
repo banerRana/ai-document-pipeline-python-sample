@@ -4,6 +4,15 @@ param name string
 param location string = resourceGroup().location
 @description('Tags for the resource.')
 param tags object = {}
+@description('MSI Id.')
+param identityId string?
+
+@description('Whether to enable public network access. Defaults to Enabled.')
+@allowed([
+  'Enabled'
+  'Disabled'
+])
+param publicNetworkAccess string = 'Enabled'
 
 @export()
 @description('Information about a workload profile for the environment.')
@@ -77,11 +86,20 @@ resource applicationInsights 'Microsoft.Insights/components@2020-02-02' existing
   name: applicationInsightsName
 }
 
-resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' = {
+resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-10-02-preview' = {
   name: name
   location: location
   tags: tags
+  identity: {
+    type: identityId == null ? 'SystemAssigned' : 'UserAssigned'
+    userAssignedIdentities: identityId == null
+      ? null
+      : {
+          '${identityId}': {}
+        }
+  }
   properties: {
+    publicNetworkAccess: publicNetworkAccess
     appLogsConfiguration: {
       destination: 'log-analytics'
       logAnalyticsConfiguration: {
@@ -113,3 +131,6 @@ output name string = containerAppsEnvironment.name
 output defaultDomain string = containerAppsEnvironment.properties.defaultDomain
 @description('Static IP for the deployed Container Apps Environment resource.')
 output staticIp string = containerAppsEnvironment.properties.staticIp
+
+@description('Static IP for the deployed Container Apps Environment resource.')
+output properties object = containerAppsEnvironment.properties

@@ -51,11 +51,11 @@ param diagnosticSettings diagnosticSettingsInfo = {
   ]
 }
 
-resource aiHub 'Microsoft.MachineLearningServices/workspaces@2024-04-01-preview' existing = {
+resource aiHub 'Microsoft.MachineLearningServices/workspaces@2025-01-01-preview' existing = {
   name: aiHubName
 }
 
-resource aiHubProject 'Microsoft.MachineLearningServices/workspaces@2024-04-01-preview' = {
+resource aiHubProject 'Microsoft.MachineLearningServices/workspaces@2025-01-01-preview' = {
   name: name
   location: location
   tags: tags

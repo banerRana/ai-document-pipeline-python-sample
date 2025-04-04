@@ -8,6 +8,12 @@ param location string = resourceGroup().location
 @description('Tags for the resource.')
 param tags object = {}
 
+param keyVaultReuse bool
+param existingKeyVaultResourceGroupName string
+
+@description('Secret Keys to add to App Configuration')
+param secureAppSettings array = []
+
 @description('Key Vault SKU name. Defaults to standard.')
 @allowed([
   'standard'
@@ -40,7 +46,12 @@ param diagnosticSettings diagnosticSettingsInfo = {
   ]
 }
 
-resource keyVault 'Microsoft.KeyVault/vaults@2024-04-01-preview' = {
+resource existingKeyVault 'Microsoft.KeyVault/vaults@2024-04-01-preview' existing = if (keyVaultReuse) {
+  scope: resourceGroup(existingKeyVaultResourceGroupName)
+  name: name
+}
+
+resource keyVault 'Microsoft.KeyVault/vaults@2024-04-01-preview' = if (!keyVaultReuse) {
   name: name
   location: location
   tags: tags
@@ -90,9 +101,26 @@ resource keyVaultDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-
   }
 }
 
+// Secret in Key Vault
+resource secret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = [for (config, i) in secureAppSettings: {
+  parent: keyVault
+  name: replace(config.name, '_', '-')
+  properties: {
+      contentType: 'string'
+      value:  config.value
+  }
+  tags: {}
+}
+]
+
 @description('ID for the deployed Key Vault resource.')
-output id string = keyVault.id
+output id string = keyVaultReuse ? existingKeyVault.id: keyVault.id
 @description('Name for the deployed Key Vault resource.')
-output name string = keyVault.name
+output name string = keyVaultReuse ? existingKeyVault.name: keyVault.name
 @description('URI for the deployed Key Vault resource.')
-output uri string = keyVault.properties.vaultUri
+output uri string = keyVaultReuse ? existingKeyVault.properties.vaultUri: keyVault.properties.vaultUri
+@description('Urls to the secrets created in the Key Vault for app config')
+output secrets array = [for (config, i) in secureAppSettings: {
+  name: config.name
+  value: concat('{"uri":"',secret[i].properties.secretUri, '"}')
+}]

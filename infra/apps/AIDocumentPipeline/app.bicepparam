@@ -4,3 +4,4 @@ extends '../../root.bicepparam'
 
 param applicationName = 'ai-document-pipeline'
 param containerImageName = ''
+param appConfigurationName = ''

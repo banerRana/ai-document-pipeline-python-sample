@@ -9,6 +9,9 @@ param workloadName string
 @description('Primary location for all resources.')
 param location string
 
+@description('AppConfiguration name')
+param appConfigurationName string
+
 @description('Tags for all resources.')
 param tags object = {
   WorkloadName: workloadName
@@ -27,8 +30,8 @@ param chatModelDeployment string = 'gpt-4o'
 
 var abbrs = loadJsonContent('../../abbreviations.json')
 var roles = loadJsonContent('../../roles.json')
+//var resourceToken = toLower(uniqueString(subscription().id, workloadName, location))
 var resourceToken = toLower(uniqueString(subscription().id, workloadName, location))
-var appResourceToken = toLower(uniqueString(subscription().id, workloadName, location, applicationName))
 
 var containerRegistryName = '${abbrs.containers.containerRegistry}${resourceToken}'
 resource containerRegistryRef 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' existing = {
@@ -59,7 +62,7 @@ var functionsWebJobStorageVariableName = 'AzureWebJobsStorage'
 var documentsConnectionStringVariableName = 'AZURE_STORAGE_QUEUES_CONNECTION_STRING'
 var applicationInsightsConnectionStringSecretName = 'applicationinsightsconnectionstring'
 
-var applicationManagedIdentityName = '${abbrs.security.managedIdentity}${appResourceToken}'
+var applicationManagedIdentityName = '${abbrs.security.managedIdentity}${abbrs.containers.containerAppsEnvironment}${resourceToken}'
 module applicationManagedIdentity '../../security/managed-identity.bicep' = {
   name: applicationManagedIdentityName
   params: {
@@ -189,9 +192,9 @@ module documentsQueue '../../storage/storage-queue.bicep' = {
 }
 
 module containerApp '../../containers/container-app.bicep' = {
-  name: '${abbrs.containers.containerApp}${appResourceToken}'
+  name: '${abbrs.containers.containerApp}${resourceToken}'
   params: {
-    name: '${abbrs.containers.containerApp}${appResourceToken}'
+    name: '${abbrs.containers.containerApp}${resourceToken}'
     location: location
     tags: union(tags, { App: 'ai-document-pipeline' })
     containerAppsEnvironmentId: containerAppsEnvironmentRef.id
@@ -241,6 +244,10 @@ module containerApp '../../containers/container-app.bicep' = {
       {
         name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
         secretRef: applicationInsightsConnectionStringSecretName
+      }
+      {
+        name: 'AZURE_APPCONFIG_URL'
+        value: concat('https://', appConfigurationName, '.azconfig.io')
       }
       {
         name: '${functionsWebJobStorageVariableName}__accountName'

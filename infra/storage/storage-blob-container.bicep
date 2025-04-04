@@ -11,7 +11,7 @@ param storageAccountName string
 ])
 param publicAccess string = 'None'
 
-resource container 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+resource container 'Microsoft.Storage/storageAccounts/blobServices/containers@2024-01-01' = {
   name: '${storageAccountName}/default/${name}'
   properties: {
     publicAccess: publicAccess

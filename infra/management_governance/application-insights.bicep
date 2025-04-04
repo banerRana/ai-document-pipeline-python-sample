@@ -5,6 +5,9 @@ param location string = resourceGroup().location
 @description('Tags for the resource.')
 param tags object = {}
 
+param publicNetworkAccessForIngestion string = 'Enabled'
+param publicNetworkAccessForQuery string = 'Enabled'
+
 @description('Name for the Log Analytics Workspace resource associated with the Application Insights instance.')
 param logAnalyticsWorkspaceName string
 
@@ -20,6 +23,8 @@ resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {
   properties: {
     Application_Type: 'web'
     WorkspaceResourceId: logAnalyticsWorkspace.id
+    publicNetworkAccessForIngestion: publicNetworkAccessForIngestion
+    publicNetworkAccessForQuery: publicNetworkAccessForQuery
   }
 }
 
