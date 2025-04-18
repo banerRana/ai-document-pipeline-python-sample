@@ -2,6 +2,9 @@ $tenantId = 'your-tenant-id'
 
 Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
+choco upgrade vscode -y
+choco upgrade azure-cli -y
+
 choco install python311 -y
 choco install git -y
 choco install azd -y
@@ -25,7 +28,7 @@ azd auth login --tenant-id $tenantId
 #copy your .env file to the project folder in the virtual machine
 
 choco install docker-desktop -y
-restart
+#restart
 
 azd provision --debug
 
