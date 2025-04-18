@@ -1,9 +1,11 @@
 param vnetName string
 param location string
 param aiSubnetName string
+param acaSubnetName string
 param bastionSubnetName string = 'AzureBastionSubnet'
 param vnetAddress string = '10.0.0.0/23'
 param aiSubnetPrefix string = '10.0.0.0/26'
+param acaSubnetPrefix string = '10.0.1.64/26'
 param bastionSubnetPrefix string = '10.0.0.64/26'
 param tags object = {}
 param vnetReuse bool
@@ -11,6 +13,7 @@ param existingVnetResourceGroupName string
 
 // Parameters for NSG names
 param aiNsgName string = 'ai-nsg'
+param acaNsgName string = 'aca-nsg'
 param appIntNsgName string = 'appInt-nsg'
 param appServicesNsgName string = 'appServices-nsg'
 param databaseNsgName string = 'database-nsg'
@@ -19,6 +22,15 @@ param bastionNsgName string = 'bastion-nsg'
 // Network Security Groups
 resource aiNsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
   name: aiNsgName
+  location: location
+  tags: tags
+  properties: {
+    securityRules: []
+  }
+}
+
+resource acaNsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
+  name: acaNsgName
   location: location
   tags: tags
   properties: {
@@ -208,6 +220,26 @@ resource newVnet 'Microsoft.Network/virtualNetworks@2024-05-01' = if (!vnetReuse
         }
       }
       {
+        name: acaSubnetName
+        properties: {
+          addressPrefix: acaSubnetPrefix
+          privateEndpointNetworkPolicies: 'Enabled'
+          privateLinkServiceNetworkPolicies: 'Enabled'
+          networkSecurityGroup: {
+            id: acaNsg.id
+          }
+          delegations: [
+            {
+              name: 'Microsoft.App/environments'
+              properties: {
+                serviceName: 'Microsoft.App/environments'
+              }
+              type: 'Microsoft.Network/virtualNetworks/subnets/delegations'
+            }
+          ]
+        }
+      }
+      {
         name: bastionSubnetName
         properties: {
           addressPrefix: bastionSubnetPrefix
@@ -225,4 +257,5 @@ resource newVnet 'Microsoft.Network/virtualNetworks@2024-05-01' = if (!vnetReuse
 output name string = vnetReuse ? existingVnet.name : newVnet.name
 output id string = vnetReuse ? existingVnet.id : newVnet.id
 output aiSubId string = vnetReuse ? resourceId(existingVnetResourceGroupName, 'Microsoft.Network/virtualNetworks/subnets', vnetName, aiSubnetName) : newVnet.properties.subnets[0].id
-output bastionSubId string = vnetReuse ? resourceId(existingVnetResourceGroupName, 'Microsoft.Network/virtualNetworks/subnets', vnetName, bastionSubnetName) : newVnet.properties.subnets[1].id
+output acaSubId string = vnetReuse ? resourceId(existingVnetResourceGroupName, 'Microsoft.Network/virtualNetworks/subnets', vnetName, acaSubnetName) : newVnet.properties.subnets[1].id
+output bastionSubId string = vnetReuse ? resourceId(existingVnetResourceGroupName, 'Microsoft.Network/virtualNetworks/subnets', vnetName, bastionSubnetName) : newVnet.properties.subnets[2].id

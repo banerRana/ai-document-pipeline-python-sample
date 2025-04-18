@@ -10,6 +10,7 @@ choco install git -y
 choco install azd -y
 choco install github-desktop -y
 choco install powershell-core -y
+choco install postman -y
 
 wsl --update
 

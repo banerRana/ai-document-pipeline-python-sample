@@ -1,5 +1,6 @@
 import { modelDeploymentInfo, raiPolicyInfo } from './ai_ml/ai-services.bicep'
 import { identityInfo } from './security/managed-identity.bicep'
+import { vnetConfigInfo } from './containers/vnet-config.bicep'
 
 targetScope = 'subscription'
 
@@ -43,6 +44,11 @@ var _deployVM = deployVM
 @allowed([true, false])
 param deployVPN bool = false
 var _deployVPN = deployVPN
+
+@description('Deploy App Config values in private network')
+@allowed([true, false])
+param deployAppConfigValues bool = true
+var _deployAppConfigValues = deployAppConfigValues
 
 @description('Test vm gpt user name. Needed only when choosing network isolation and create bastion option. If not you can leave it blank.')
 param vmUserName string = ''
@@ -415,6 +421,14 @@ var _aiSubnetName = !empty(aiSubnetName) ? aiSubnetName : 'ai-subnet'
 param aiSubnetPrefix string = ''
 var _aiSubnetPrefix = !empty(aiSubnetPrefix) ? aiSubnetPrefix : '10.0.0.0/26'
 
+@description('Name of the AI services subnet')
+param acaSubnetName string = ''
+var _acaSubnetName = !empty(acaSubnetName) ? acaSubnetName : 'aca-subnet'
+
+@description('Address prefix for the AI services subnet')
+param acaSubnetPrefix string = ''
+var _acaSubnetPrefix = !empty(acaSubnetPrefix) ? acaSubnetPrefix : '10.0.1.64/26'
+
 @description('Name of the Bastion subnet')
 var _bastionSubnetName = 'AzureBastionSubnet'
 
@@ -782,8 +796,8 @@ module appConfig './app_config/appconfig.bicep' = if (provisionAppConfig) {
     identityId: applicationManagedIdentity.outputs.id
     //appConfigReuse: _azureReuseConfig.appConfigReuse
     //existingAppConfigResourceGroupName: _azureReuseConfig.existingAppConfigResourceGroupName
-    appSettings: _networkIsolation?[]:appSettings
-    secureAppSettings: _networkIsolation?[]:keyVault.outputs.secrets
+    appSettings: (_networkIsolation && !_deployAppConfigValues)?[]:appSettings
+    secureAppSettings: (_networkIsolation && !_deployAppConfigValues)?[]:keyVault.outputs.secrets
     location: location
     tags: tags
     //logAnalyticsWorkspaceResourceId: _azureReuseConfig.existingLogAnalyticsWorkspaceResourceId ?? ''
@@ -1047,6 +1061,8 @@ module vnet './network/vnet.bicep' = if (_networkIsolation && !_vnetReuse) {
     vnetAddress: _vnetAddress
     aiSubnetName: _aiSubnetName
     aiSubnetPrefix: _aiSubnetPrefix
+    acaSubnetName: _acaSubnetName
+    acaSubnetPrefix: _acaSubnetPrefix
     bastionSubnetName: _bastionSubnetName
     bastionSubnetPrefix: _bastionSubnetPrefix
   }
@@ -1226,7 +1242,7 @@ module containerRegistry 'containers/container-registry.bicep' = {
     }
     adminUserEnabled: true
     roleAssignments: concat(acrPushIdentityAssignments, acrPullIdentityAssignments, [])
-    publicNetworkAccess: _networkIsolation?'Disabled':'Enabled'
+    publicNetworkAccess: 'Enabled'  //This gets overridden by the private endpoint and the network isolation
   }
 }
 
@@ -1252,6 +1268,19 @@ module containerAppsEnvironment 'containers/container-apps-environment.bicep' = 
     tags: union(tags, {})
     logAnalyticsWorkspaceName: logAnalyticsWorkspace.outputs.name
     applicationInsightsName: applicationInsights.outputs.name
+    workloadProfiles: [
+      {
+        workloadProfileType: 'D4'
+        name: 'main'
+        //enableFips: false
+        minimumCount: 0
+        maximumCount: 1
+      }
+    ]
+    vnetConfig: {
+      infrastructureSubnetId: _networkIsolation?vnet.outputs.acaSubId:''
+      internal: true
+    }
   }
 }
 
@@ -1395,32 +1424,32 @@ module storageAccountIdentityRoleAssignment './security/resource-role-assignment
     resourceId: storageAccount.outputs.id
     roleAssignments: [
       {
-        principalId: applicationManagedIdentity.outputs.principalId
+        principalId: containerAppManagedIdentity.outputs.principalId
         roleDefinitionId: storageAccountContributorRole.id
         principalType: 'ServicePrincipal'
       }
       {
-        principalId: applicationManagedIdentity.outputs.principalId
+        principalId: containerAppManagedIdentity.outputs.principalId
         roleDefinitionId: storageBlobDataContributorRole.id
         principalType: 'ServicePrincipal'
       }
       {
-        principalId: applicationManagedIdentity.outputs.principalId
+        principalId: containerAppManagedIdentity.outputs.principalId
         roleDefinitionId: storageBlobDataOwnerRole.id
         principalType: 'ServicePrincipal'
       }
       {
-        principalId: applicationManagedIdentity.outputs.principalId
+        principalId: containerAppManagedIdentity.outputs.principalId
         roleDefinitionId: storageFileDataPrivilegedContributorRole.id
         principalType: 'ServicePrincipal'
       }
       {
-        principalId: applicationManagedIdentity.outputs.principalId
+        principalId: containerAppManagedIdentity.outputs.principalId
         roleDefinitionId: storageTableDataContributorRole.id
         principalType: 'ServicePrincipal'
       }
       {
-        principalId: applicationManagedIdentity.outputs.principalId
+        principalId: containerAppManagedIdentity.outputs.principalId
         roleDefinitionId: storageQueueDataContributorRole.id
         principalType: 'ServicePrincipal'
       }
@@ -1516,7 +1545,15 @@ module containerApp './containers/container-app.bicep' = {
       }
       {
         name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-        secretRef: applicationInsightsConnectionStringSecretName
+        secretRef: applicationInsights.outputs.connectionString
+      }
+      {
+        name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+        secretRef: applicationInsights.outputs.instrumentationKey
+      }
+      {
+        name: 'ApplicationInsights_InstrumentationKey'
+        secretRef: applicationInsights.outputs.instrumentationKey
       }
       {
         name: 'AZURE_APPCONFIG_URL'
@@ -1532,11 +1569,15 @@ module containerApp './containers/container-app.bicep' = {
       }
       {
         name: '${functionsWebJobStorageVariableName}__clientId'
-        value: applicationManagedIdentity.outputs.clientId
+        value: containerAppManagedIdentity.outputs.clientId
       }
       {
         name: 'AZURE_CLIENT_ID'
-        value: applicationManagedIdentity.outputs.clientId
+        value: containerAppManagedIdentity.outputs.clientId
+      }
+      {
+        name: 'AZURE_TENANT_ID'
+        value: tenantId
       }
       {
         name: 'AZURE_AISERVICES_ENDPOINT'
@@ -1564,11 +1605,27 @@ module containerApp './containers/container-app.bicep' = {
       }
       {
         name: '${documentsConnectionStringVariableName}__clientId'
-        value: applicationManagedIdentity.outputs.clientId
+        value: containerAppManagedIdentity.outputs.clientId
       }
       {
         name: 'WEBSITE_HOSTNAME'
         value: 'localhost'
+      }
+      {
+        name: 'WEBSITE_HTTPLOGGING_RETENTION_DAYS'
+        value: '7'
+      }
+      {
+        name: 'WEBSITE_VNET_ROUTE_ALL'
+        value: '0'
+      }
+      {
+        name: 'WEBSITE_HOSTNAME'
+        value: 'localhost'
+      }
+      {
+        name: 'allow_environment_variables'
+        value: 'true'
       }
     ]
   }

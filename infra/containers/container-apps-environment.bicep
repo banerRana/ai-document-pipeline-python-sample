@@ -1,3 +1,5 @@
+import { vnetConfigInfo } from './vnet-config.bicep'
+
 @description('Name of the resource.')
 param name string
 @description('Location to deploy the resource. Defaults to the location of the resource group.')
@@ -49,15 +51,6 @@ type customDomainConfigInfo = {
   certificatePassword: string
 }
 
-@export()
-@description('Information about the configuration for a virtual network in the environment.')
-type vnetConfigInfo = {
-  @description('Resource ID of a subnet for infrastructure components.')
-  infrastructureSubnetId: string
-  @description('Value indicating whether the environment only has an internal load balancer.')
-  internal: bool
-}
-
 @description('Additional workload profiles. Includes Consumption by default.')
 param workloadProfiles workloadProfileInfo[] = []
 @description('Name of the Log Analytics Workspace to store application logs.')
@@ -99,7 +92,7 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-10-02-
         }
   }
   properties: {
-    publicNetworkAccess: publicNetworkAccess
+    publicNetworkAccess: !empty(vnetConfig.infrastructureSubnetId) ? 'Disabled' : 'Enabled'
     appLogsConfiguration: {
       destination: 'log-analytics'
       logAnalyticsConfiguration: {
@@ -120,6 +113,7 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-10-02-
     vnetConfiguration: !empty(vnetConfig.infrastructureSubnetId) ? vnetConfig : {}
     zoneRedundant: zoneRedundant
     daprAIConnectionString: applicationInsights.properties.ConnectionString
+    daprAIInstrumentationKey: applicationInsights.properties.InstrumentationKey
   }
 }
 

@@ -41,4 +41,8 @@ Write-Host "Cleaning up old ${ContainerName} images in Azure Container Registry.
 
 az acr run --cmd "acr purge --filter '${ContainerName}:.*' --untagged --ago 1h" --registry $ContainerRegistryName --resource-group $AzureResourceGroup /dev/null
 
+$acrLogin = $(az acr show --name $ContainerRegistryName --resource-group $AzureResourceGroup -o json | ConvertFrom-Json).loginServer
+
+az containerapp update --name $AzureContainerImageName --resource-group $AzureResourceGroup --image "$acrLogin/$ContainerImageName"
+
 Pop-Location

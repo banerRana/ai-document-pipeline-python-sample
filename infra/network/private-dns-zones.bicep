@@ -28,6 +28,5 @@ resource privateDnsZoneLink 'Microsoft.Network/privateDnsZones/virtualNetworkLin
   }
 }
 
-
 output privateDnsZoneName string = dnsZone.name
 output id string = dnsZone.id
