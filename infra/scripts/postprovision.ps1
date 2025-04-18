@@ -37,21 +37,8 @@ docker push $AzureContainerImageName
 
 Write-Host "Deploying Azure Container Apps for ${ContainerName}..."
 
-$DeploymentOutputs = (az deployment group create --name ai-document-pipeline-app --resource-group $AzureResourceGroup --template-file './app.bicep' `
-        --parameters './app.bicepparam' `
-        --parameters workloadName=$WorkloadName `
-        --parameters appConfigurationName=$AppConfigurationName `
-        --parameters location=$AzureLocation `
-        --parameters containerImageName=$ContainerImageName `
-        --parameters chatModelDeployment=$AzureOpenAIChatDeployment `
-        --query properties.outputs -o json) | ConvertFrom-Json
-
-$DeploymentOutputs | ConvertTo-Json | Out-File -FilePath './AppOutputs.json' -Encoding utf8
-
 Write-Host "Cleaning up old ${ContainerName} images in Azure Container Registry..."
 
 az acr run --cmd "acr purge --filter '${ContainerName}:.*' --untagged --ago 1h" --registry $ContainerRegistryName --resource-group $AzureResourceGroup /dev/null
 
 Pop-Location
-
-return $DeploymentOutputs

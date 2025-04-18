@@ -8,8 +8,12 @@ param location string = resourceGroup().location
 @description('Tags for the resource.')
 param tags object = {}
 
+param subnets array = []
+
 param keyVaultReuse bool
 param existingKeyVaultResourceGroupName string
+
+param publicNetworkAccess string = 'Enabled'
 
 @description('Secret Keys to add to App Configuration')
 param secureAppSettings array = []
@@ -72,6 +76,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2024-04-01-preview' = if (!keyVault
     enableRbacAuthorization: true
     enablePurgeProtection: enablePurgeProtection
     softDeleteRetentionInDays: retentionInDays
+    publicNetworkAccess: publicNetworkAccess
   }
 }
 

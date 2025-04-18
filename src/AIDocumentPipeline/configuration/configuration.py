@@ -18,10 +18,10 @@ class Configuration:
             self.tenant_id = os.environ.get('AZURE_TENANT_ID', "*")
         except Exception as e:
             raise e
-        
+
         self.credential = DefaultAzureCredential(
             additionally_allowed_tenants=self.tenant_id,
-            exclude_environment_credential=True, 
+            exclude_environment_credential=True,
             exclude_managed_identity_credential=False,
             exclude_cli_credential=False,
             exclude_powershell_credential=True,
@@ -32,31 +32,28 @@ class Configuration:
 
         try:
             app_config_uri = os.environ['APP_CONFIGURATION_URI']
+            self.config = load(endpoint=app_config_uri, credential=self.credential,key_vault_options=AzureAppConfigurationKeyVaultOptions(credential=self.credential))
         except Exception as e:
-            raise e
-
-        connection_string = os.environ["AZURE_APPCONFIG_CONNECTION_STRING"]
-
-        try:
-        # Connect to Azure App Configuration using a connection string.
-            self.config = load(connection_string=connection_string, key_vault_options=AzureAppConfigurationKeyVaultOptions(credential=self.credential))
-        except Exception as e:
-            print(e)
+            try:
+                connection_string = os.environ["AZURE_APPCONFIG_CONNECTION_STRING"]
+                # Connect to Azure App Configuration using a connection string.
+                self.config = load(connection_string=connection_string, key_vault_options=AzureAppConfigurationKeyVaultOptions(credential=self.credential))
+            except Exception as e:
+                raise Exception("Unable to connect to Azure App Configuration. Please check your connection string or endpoint.")
 
     # Connect to Azure App Configuration.
-    #config = load(endpoint=app_config_uri, credential=credential,key_vault_options=AzureAppConfigurationKeyVaultOptions(credential=credential))
 
     def get_value(self, key: str, default: str = None) -> str:
-        
+
         if key is None:
             raise Exception('The key parameter is required for get_value().')
 
         value = None
 
         allow_env_vars = False
-        if "allow-environment-variables" in os.environ:
+        if "allow_environment_variables" in os.environ:
             allow_env_vars = bool(os.environ[
-                    "allow-environment-variables"
+                    "allow_environment_variables"
                     ])
 
         if allow_env_vars is True:
@@ -73,9 +70,9 @@ class Configuration:
         else:
             if default is not None:
                 return default
-            
+
             raise Exception(f'The configuration variable {key} not found.')
-        
+
     def retry_before_sleep(self, retry_state):
         # Log the outcome of each retry attempt.
         message = f"""Retrying {retry_state.fn}:

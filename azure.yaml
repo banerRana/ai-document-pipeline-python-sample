@@ -3,6 +3,7 @@
 name: azure-ai-document-pipeline-python-sample
 metadata:
     template: azd-init@1.13.2
+resourceGroup: ${AZURE_RESOURCE_GROUP_NAME}
 services:
     aidocument-pipeline:
         project: src/AIDocumentPipeline
@@ -10,3 +11,18 @@ services:
         language: python
         docker:
             path: Dockerfile
+hooks:
+  preprovision:
+    posix:
+      shell: sh
+      run: infra/scripts/preprovision.sh -DeploymentName $env:AZURE_ENV_NAME -Location $env:AZURE_LOCATION
+    windows:
+      shell: pwsh
+      run: infra/scripts/preprovision.ps1 -DeploymentName $env:AZURE_ENV_NAME -Location $env:AZURE_LOCATION
+  postprovision:
+    posix:
+      shell: sh
+      run: infra/scripts/postprovision.sh -InfrastructureOutputsPath 'infra/scripts/InfrastructureOutputs.json'
+    windows:
+      shell: pwsh
+      run: infra/scripts/postprovision.ps1 -InfrastructureOutputsPath 'infra/scripts/InfrastructureOutputs.json'

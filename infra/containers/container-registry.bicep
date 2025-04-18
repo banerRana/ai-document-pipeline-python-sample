@@ -55,6 +55,12 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2024-11-01-pr
   properties: {
     adminUserEnabled: adminUserEnabled
     publicNetworkAccess: publicNetworkAccess
+    networkRuleBypassOptions: 'AzureServices'
+    networkRuleSet: {
+      defaultAction: 'Deny'
+      ipRules: [
+      ]
+    }
   }
 }
 

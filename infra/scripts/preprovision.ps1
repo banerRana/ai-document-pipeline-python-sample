@@ -24,8 +24,8 @@ if ($whatIf) {
     $result = (az deployment sub what-if `
             --name $deploymentName `
             --location $location `
-            --template-file './main.bicep' `
-            --parameters './main.bicepparam' `
+            --template-file '../core.bicep' `
+            --parameters '../core.bicepparam' `
             --parameters workloadName=$deploymentName `
             --parameters location=$location `
             --parameters identities="[]" `
@@ -44,8 +44,8 @@ if ($whatIf) {
 $deploymentOutputs = (az deployment sub create `
         --name $deploymentName `
         --location $location `
-        --template-file './main.bicep' `
-        --parameters './main.bicepparam' `
+        --template-file '../core.bicep' `
+        --parameters '../core.bicepparam' `
         --parameters workloadName=$deploymentName `
         --parameters location=$location `
         --parameters identities="[]" `
