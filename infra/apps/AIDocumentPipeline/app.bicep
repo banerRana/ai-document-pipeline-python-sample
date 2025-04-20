@@ -61,6 +61,7 @@ resource containerAppsEnvironmentRef 'Microsoft.App/managedEnvironments@2024-03-
 var functionsWebJobStorageVariableName = 'AzureWebJobsStorage'
 var documentsConnectionStringVariableName = 'AZURE_STORAGE_QUEUES_CONNECTION_STRING'
 var applicationInsightsConnectionStringSecretName = 'applicationinsightsconnectionstring'
+var applicationInsightsKeySecretName = 'applicationinsightskey'
 
 var applicationManagedIdentityName = '${abbrs.security.managedIdentity}${abbrs.containers.containerAppsEnvironment}${resourceToken}'
 module applicationManagedIdentity '../../security/managed-identity.bicep' = {
@@ -237,6 +238,10 @@ module containerApp '../../containers/container-app.bicep' = {
         name: applicationInsightsConnectionStringSecretName
         value: applicationInsightsRef.properties.ConnectionString
       }
+      {
+        name: applicationInsightsKeySecretName
+        value: applicationInsightsRef.properties.InstrumentationKey
+      }
     ]
     environmentVariables: [
       {
@@ -254,6 +259,14 @@ module containerApp '../../containers/container-app.bicep' = {
       {
         name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
         secretRef: applicationInsightsConnectionStringSecretName
+      }
+      {
+        name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+        secretRef: applicationInsightsKeySecretName
+      }
+      {
+        name: 'ApplicationInsights_InstrumentationKey'
+        secretRef: applicationInsightsKeySecretName
       }
       {
         name: 'AZURE_APPCONFIG_URL'

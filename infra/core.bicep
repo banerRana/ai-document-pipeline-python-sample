@@ -623,6 +623,16 @@ module azMonitorDnsZone './network/private-dns-zones.bicep' = if (_networkIsolat
   }
 }
 
+module acaDnsZone './network/private-dns-zones.bicep' = if (_networkIsolation && !_vnetReuse) {
+  name: 'aca-dnzones'
+  scope: resourceGroup
+  params: {
+    dnsZoneName: 'privatelink.eastus2.azurecontainerapps.io'
+    tags: tags
+    virtualNetworkName: _networkIsolation?vnet.outputs.name:''
+  }
+}
+
 var keyVaultPeName = '${abbrs.security.keyVault}${abbrs.security.privateEndpoint}${suffix}'
 module keyvaultpe './network/private-endpoint.bicep' = if (_networkIsolation && !_vnetReuse) {
   name: keyVaultPeName
@@ -1257,6 +1267,21 @@ module caeManagedIdentity './security/managed-identity.bicep' = {
   }
 }
 
+var containerAppsPeName = '${abbrs.containers.containerAppsEnvironment}${abbrs.security.privateEndpoint}${suffix}'
+module containerAppPe './network/private-endpoint.bicep' = if (_networkIsolation && !_vnetReuse) {
+  name: containerAppsPeName
+  scope: resourceGroup
+  params: {
+    location: location
+    name: containerAppsPeName
+    tags: tags
+    subnetId: _networkIsolation?vnet.outputs.aiSubId:''
+    serviceId: containerAppsEnvironment.outputs.id
+    groupIds: ['managedEnvironments']
+    dnsZoneId: _networkIsolation?acaDnsZone.outputs.id:''
+  }
+}
+
 var containerAppsEnvironmentName = '${abbrs.containers.containerAppsEnvironment}${suffix}'
 module containerAppsEnvironment 'containers/container-apps-environment.bicep' = {
   name: containerAppsEnvironmentName
@@ -1288,7 +1313,7 @@ module containerAppsDnsZone './network/private-dns-zones.bicep' = if (_networkIs
   name: 'cae-dnzones'
   scope: resourceGroup
   params: {
-    dnsZoneName: containerAppsEnvironment.outputs.properties.defaultDomain
+    dnsZoneName: concat('privatelink.', split(containerAppsEnvironment.outputs.properties.defaultDomain, '.')[1], '.azurecontainerapps.io')
     tags: tags
     virtualNetworkName: _networkIsolation?vnet.outputs.name:''
   }
@@ -1391,6 +1416,8 @@ module testvm './vm/dsvm.bicep' = if (_networkIsolation && !_vnetReuse && _deplo
 var functionsWebJobStorageVariableName = 'AzureWebJobsStorage'
 var documentsConnectionStringVariableName = 'AZURE_STORAGE_QUEUES_CONNECTION_STRING'
 var applicationInsightsConnectionStringSecretName = 'applicationinsightsconnectionstring'
+var applicationInsightsKeySecretName = 'applicationinsightskey'
+
 
 module containerAppManagedIdentity './security/managed-identity.bicep' = {
   name: '${abbrs.security.managedIdentity}${abbrs.containers.containerApp}${suffix}'
@@ -1529,6 +1556,10 @@ module containerApp './containers/container-app.bicep' = {
         name: applicationInsightsConnectionStringSecretName
         value: applicationInsights.outputs.connectionString
       }
+      {
+        name: applicationInsightsKeySecretName
+        value: applicationInsights.outputs.instrumentationKey
+      }
     ]
     environmentVariables: [
       {
@@ -1545,15 +1576,15 @@ module containerApp './containers/container-app.bicep' = {
       }
       {
         name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-        secretRef: applicationInsights.outputs.connectionString
+        secretRef: applicationInsightsConnectionStringSecretName
       }
       {
         name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-        secretRef: applicationInsights.outputs.instrumentationKey
+        secretRef: applicationInsightsKeySecretName
       }
       {
         name: 'ApplicationInsights_InstrumentationKey'
-        secretRef: applicationInsights.outputs.instrumentationKey
+        secretRef: applicationInsightsKeySecretName
       }
       {
         name: 'AZURE_APPCONFIG_URL'
