@@ -39,7 +39,7 @@ class Configuration:
                 # Connect to Azure App Configuration using a connection string.
                 self.config = load(connection_string=connection_string, key_vault_options=AzureAppConfigurationKeyVaultOptions(credential=self.credential))
             except Exception as e:
-                raise Exception("Unable to connect to Azure App Configuration. Please check your connection string or endpoint.")
+                raise Exception(f"Unable to connect to Azure App Configuration. Please check your connection string or endpoint. {e}")
 
     # Connect to Azure App Configuration.
 

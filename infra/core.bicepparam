@@ -81,6 +81,13 @@ param storageContainerName = readEnvironmentVariable('AZURE_STORAGE_CONTAINER_NA
 param aiServicesName = readEnvironmentVariable('AZURE_AI_SERVICES_NAME','')
 param openAiServiceName = readEnvironmentVariable('AZURE_OPENAI_SERVICE_NAME','')
 
+param azureDbConfig = {
+  dbAccountName: readEnvironmentVariable('AZURE_DB_ACCOUNT_NAME','')
+  dbDatabaseName: readEnvironmentVariable('AZURE_DB_DATABASE_NAME','')
+  conversationContainerName: readEnvironmentVariable('AZURE_DB_CONVERSATIONS_CONTAINER_NAME','')
+  datasourcesContainerName: readEnvironmentVariable('AZURE_DB_DATASOURCES_CONTAINER_NAME','')
+}
+
 param azureReuseConfig = {
     aoaiReuse: readEnvironmentVariable('AOAI_REUSE', 'false')
     existingAoaiResourceGroupName : readEnvironmentVariable('AOAI_RESOURCE_GROUP_NAME','')

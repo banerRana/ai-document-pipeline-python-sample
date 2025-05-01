@@ -45,6 +45,16 @@ var _deployVM = deployVM
 param deployVPN bool = false
 var _deployVPN = deployVPN
 
+@description('Use ACA?')
+@allowed([true, false])
+param useACA bool = false
+var _useACA = useACA
+
+@description('Use AKS?')
+@allowed([true, false])
+param useAKS bool = false
+var _useAKS = useAKS
+
 @description('Deploy App Config values in private network')
 @allowed([true, false])
 param deployAppConfigValues bool = true
@@ -85,6 +95,10 @@ var _azureQueueStorageAccountPe = !empty(azureQueueStorageAccountPe) ? azureQueu
 
 param azureFileStorageAccountPe string = ''
 var _azureFileStorageAccountPe = !empty(azureFileStorageAccountPe) ? azureFileStorageAccountPe : '${abbrs.storage.storageAccount}file${abbrs.networking.privateEndpoint}${suffix}'
+
+@description('The name of the Azure Cosmos DB Private Endpoint. If left empty, a random name will be generated.')
+param azureDbAccountPe string = ''
+var _azureDbAccountPe = !empty(azureDbAccountPe) ? azureDbAccountPe : '${abbrs.databases.cosmosDBDatabase}${abbrs.networking.privateEndpoint}${suffix}'
 
 @description('Settings to define reusable resources.')
 var _azureReuseConfigDefaults = {
@@ -277,6 +291,23 @@ var _openaiApiVersion = !empty(openaiApiVersion) ? openaiApiVersion : '2025-01-0
 @allowed([true, false])
 param chatGptLlmMonitoring bool = false
 var _chatGptLlmMonitoring = chatGptLlmMonitoring != null ? chatGptLlmMonitoring : true
+
+// Database settings
+
+var _azureDbConfigDefaults = {
+  dbAccountName: '${abbrs.databases.cosmosDBDatabase}${suffix}'
+  dbDatabaseName: 'database${suffix}'
+  conversationContainerName: 'conversations'
+  datasourcesContainerName: 'datasources'
+}
+param azureDbConfig object = {}
+var _azureDbConfig = union(_azureDbConfigDefaults, {
+    dbAccountName: (empty(azureDbConfig.dbAccountName) ? _azureDbConfigDefaults.dbAccountName : azureDbConfig.dbAccountName)
+    dbDatabaseName: (empty(azureDbConfig.dbDatabaseName) ? _azureDbConfigDefaults.dbDatabaseName : azureDbConfig.dbDatabaseName)
+    conversationContainerName: (empty(azureDbConfig.conversationContainerName) ? _azureDbConfigDefaults.conversationContainerName : azureDbConfig.conversationContainerName)
+    datasourcesContainerName: (empty(azureDbConfig.datasourcesContainerName) ? _azureDbConfigDefaults.datasourcesContainerName : azureDbConfig.datasourcesContainerName)
+})
+var _cosmosDbResourceGroupName = _azureReuseConfig.cosmosDbReuse ? _azureReuseConfig.existingCosmosDbResourceGroupName : _resourceGroupName
 
 // App Insights Settings
 
@@ -1073,6 +1104,7 @@ module vnet './network/vnet.bicep' = if (_networkIsolation && !_vnetReuse) {
     aiSubnetPrefix: _aiSubnetPrefix
     acaSubnetName: _acaSubnetName
     acaSubnetPrefix: _acaSubnetPrefix
+    databaseSubnetName: _databaseSubnetName
     bastionSubnetName: _bastionSubnetName
     bastionSubnetPrefix: _bastionSubnetPrefix
   }
@@ -1516,6 +1548,39 @@ module documentsQueue './storage/storage-queue.bicep' = {
   params: {
     name: documentsQueueName
     storageAccountName: storageAccount.name
+  }
+}
+
+module cosmosAccount './db/cosmos.bicep' = {
+  name: 'cosmosaccount'
+  scope: resourceGroup
+  params: {
+    accountName: _azureDbConfig.dbAccountName
+    cosmosDbReuse: _azureReuseConfig.cosmosDbReuse
+    existingCosmosDbResourceGroupName: _azureReuseConfig.existingCosmosDbResourceGroupName
+    existingCosmosDbAccountName: _azureReuseConfig.existingCosmosDbAccountName
+    publicNetworkAccess: _networkIsolation?'Disabled':'Enabled'
+    location: location
+    conversationContainerName:  _azureDbConfig.conversationContainerName
+    datasourcesContainerName: _azureDbConfig.datasourcesContainerName
+    databaseName: _azureDbConfig.dbDatabaseName
+    tags: tags
+    secretName: 'azureDBkey'
+    keyVaultName: keyVault.outputs.name
+  }
+}
+
+module cosmospe './network/private-endpoint.bicep' = if (_networkIsolation && !_vnetReuse) {
+  name: 'cosmospe'
+  scope: resourceGroup
+  params: {
+    location: location
+    name: _azureDbAccountPe
+    tags: tags
+    subnetId: _networkIsolation?vnet.outputs.databaseSubId:''
+    serviceId: cosmosAccount.outputs.id
+    groupIds: ['Sql']
+    dnsZoneId: _networkIsolation?documentsDnsZone.outputs.id:''
   }
 }
 
