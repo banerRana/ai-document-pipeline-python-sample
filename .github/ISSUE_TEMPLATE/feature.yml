@@ -1,0 +1,38 @@
+name: Feature Request 🚀
+description: Submit a proposal for a new feature or enhancement
+title: '[Feature]: '
+labels:
+  - enhancement
+  - triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Thank you for taking the time to suggest a new feature!
+  - type: textarea
+    id: description
+    attributes:
+      label: Feature Description
+      description: A clear and concise description of the feature you are proposing.
+      placeholder: |
+        I would like to see...
+    validations:
+      required: true
+  - type: textarea
+    id: usecase
+    attributes:
+      label: Use Case
+      description: Please describe the use case for this feature.
+      placeholder: |
+        This feature would be useful for...
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Why do you believe this feature is important?
+      placeholder: |
+        This feature would help to fill a gap in...
+    validations:
+      required: true
