@@ -6,6 +6,14 @@ param name string
 param location string = resourceGroup().location
 @description('Tags for the resource.')
 param tags object = {}
+@description('MSI id for resource.')
+param identityId string?
+@description('Whether to enable public network access. Defaults to Enabled.')
+@allowed([
+  'Enabled'
+  'Disabled'
+])
+param publicNetworkAccess string = 'Enabled'
 
 @export()
 @description('SKU information for Storage Account.')
@@ -54,12 +62,20 @@ param disableLocalAuth bool = true
 @description('Role assignments to create for the Storage Account.')
 param roleAssignments roleAssignmentInfo[] = []
 
-resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
+resource storageAccount 'Microsoft.Storage/storageAccounts@2024-01-01' = {
   name: name
   location: location
   tags: tags
   kind: 'StorageV2'
   sku: sku
+  identity: {
+    type: identityId == null ? 'SystemAssigned' : 'UserAssigned'
+    userAssignedIdentities: identityId == null
+      ? null
+      : {
+          '${identityId}': {}
+        }
+  }
   properties: {
     accessTier: startsWith(sku.name, 'Premium') ? 'Premium' : accessTier
     networkAcls: {
@@ -68,6 +84,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
       ipRules: []
       virtualNetworkRules: []
     }
+    publicNetworkAccess: publicNetworkAccess
     allowSharedKeyAccess: !disableLocalAuth
     supportsHttpsTrafficOnly: true
     minimumTlsVersion: 'TLS1_2'
@@ -90,7 +107,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
     }
   }
 
-  resource blobServices 'blobServices@2023-05-01' = {
+  resource blobServices 'blobServices@2024-01-01' = {
     name: 'default'
     properties: {
       containerDeleteRetentionPolicy: blobContainerRetention

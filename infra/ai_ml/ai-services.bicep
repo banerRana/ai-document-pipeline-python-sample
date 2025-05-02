@@ -8,6 +8,10 @@ param location string = resourceGroup().location
 @description('Tags for the resource.')
 param tags object = {}
 
+param aiServicesDeploy bool = true
+param aiServicesReuse bool
+param existingAiServicesResourceGroupName string
+
 @export()
 @description('Information about a Responsible AI policy for AI Services.')
 type raiPolicyInfo = {
@@ -17,22 +21,22 @@ type raiPolicyInfo = {
   mode: 'Blocking' | 'Default' | 'Deferred'
   prompt: {
     violence: {
-      allowedContentLevel: 'Low' | 'Medium' | 'High'
+      SeverityThreshold: 'Low' | 'Medium' | 'High'
       blocking: bool
       enabled: bool
     }?
     hate: {
-      allowedContentLevel: 'Low' | 'Medium' | 'High'
+      SeverityThreshold: 'Low' | 'Medium' | 'High'
       blocking: bool
       enabled: bool
     }?
     sexual: {
-      allowedContentLevel: 'Low' | 'Medium' | 'High'
+      SeverityThreshold: 'Low' | 'Medium' | 'High'
       blocking: bool
       enabled: bool
     }?
     selfharm: {
-      allowedContentLevel: 'Low' | 'Medium' | 'High'
+      SeverityThreshold: 'Low' | 'Medium' | 'High'
       blocking: bool
       enabled: bool
     }?
@@ -47,22 +51,22 @@ type raiPolicyInfo = {
   }?
   completion: {
     violence: {
-      allowedContentLevel: 'Low' | 'Medium' | 'High'
+      SeverityThreshold: 'Low' | 'Medium' | 'High'
       blocking: bool
       enabled: bool
     }?
     hate: {
-      allowedContentLevel: 'Low' | 'Medium' | 'High'
+      SeverityThreshold: 'Low' | 'Medium' | 'High'
       blocking: bool
       enabled: bool
     }?
     sexual: {
-      allowedContentLevel: 'Low' | 'Medium' | 'High'
+      SeverityThreshold: 'Low' | 'Medium' | 'High'
       blocking: bool
       enabled: bool
     }?
     selfharm: {
-      allowedContentLevel: 'Low' | 'Medium' | 'High'
+      SeverityThreshold: 'Low' | 'Medium' | 'High'
       blocking: bool
       enabled: bool
     }?
@@ -106,6 +110,10 @@ type modelDeploymentInfo = {
 
 @description('ID for the Managed Identity associated with the AI Services instance. Defaults to the system-assigned identity.')
 param identityId string?
+@description('ID for the Managed Identity associated with the AI Services instance. Defaults to the system-assigned identity.')
+param identityPrincipalId string?
+@description('ID for the Managed Identity associated with the AI Services instance. Defaults to the system-assigned identity.')
+param identityClientId string?
 @description('List of model deployments.')
 param deployments modelDeploymentInfo[] = []
 @description('Whether to enable public network access. Defaults to Enabled.')
@@ -138,7 +146,12 @@ param diagnosticSettings diagnosticSettingsInfo = {
   ]
 }
 
-resource aiServices 'Microsoft.CognitiveServices/accounts@2024-04-01-preview' = {
+resource existingAccount 'Microsoft.CognitiveServices/accounts@2024-10-01' existing  = if (aiServicesReuse && aiServicesDeploy) {
+  scope: resourceGroup(existingAiServicesResourceGroupName)
+  name: name
+}
+
+resource aiServices 'Microsoft.CognitiveServices/accounts@2024-10-01' = if (!aiServicesReuse && aiServicesDeploy) {
   name: name
   location: location
   tags: tags
@@ -148,7 +161,10 @@ resource aiServices 'Microsoft.CognitiveServices/accounts@2024-04-01-preview' = 
     userAssignedIdentities: identityId == null
       ? null
       : {
-          '${identityId}': {}
+          '${identityId}': {
+            //principalId: identityPrincipalId
+            //clientId: identityClientId
+          }
         }
   }
   properties: {
@@ -167,7 +183,7 @@ resource aiServices 'Microsoft.CognitiveServices/accounts@2024-04-01-preview' = 
 }
 
 @batchSize(1)
-resource raiPolicy 'Microsoft.CognitiveServices/accounts/raiPolicies@2024-04-01-preview' = [
+resource raiPolicy 'Microsoft.CognitiveServices/accounts/raiPolicies@2024-10-01' = [
   for raiPolicy in raiPolicies: {
     parent: aiServices
     name: raiPolicy.name
@@ -177,56 +193,56 @@ resource raiPolicy 'Microsoft.CognitiveServices/accounts/raiPolicies@2024-04-01-
       contentFilters: [
         {
           name: 'violence'
-          allowedContentLevel: raiPolicy.?prompt.?violence.?allowedContentLevel ?? 'High'
+          SeverityThreshold: raiPolicy.?prompt.?violence.?SeverityThreshold ?? 'High'
           blocking: raiPolicy.?prompt.?violence.?blocking ?? true
           enabled: raiPolicy.?prompt.?violence.?enabled ?? true
           source: 'Prompt'
         }
         {
           name: 'violence'
-          allowedContentLevel: raiPolicy.?completion.?violence.?allowedContentLevel ?? 'High'
+          SeverityThreshold: raiPolicy.?completion.?violence.?SeverityThreshold ?? 'High'
           blocking: raiPolicy.?completion.?violence.?blocking ?? true
           enabled: raiPolicy.?completion.?violence.?enabled ?? true
           source: 'Completion'
         }
         {
           name: 'hate'
-          allowedContentLevel: raiPolicy.?prompt.?hate.?allowedContentLevel ?? 'High'
+          SeverityThreshold: raiPolicy.?prompt.?hate.?SeverityThreshold ?? 'High'
           blocking: raiPolicy.?prompt.?hate.?blocking ?? true
           enabled: raiPolicy.?prompt.?hate.?enabled ?? true
           source: 'Prompt'
         }
         {
           name: 'hate'
-          allowedContentLevel: raiPolicy.?completion.?hate.?allowedContentLevel ?? 'High'
+          SeverityThreshold: raiPolicy.?completion.?hate.?SeverityThreshold ?? 'High'
           blocking: raiPolicy.?completion.?hate.?blocking ?? true
           enabled: raiPolicy.?completion.?hate.?enabled ?? true
           source: 'Completion'
         }
         {
           name: 'sexual'
-          allowedContentLevel: raiPolicy.?prompt.?sexual.?allowedContentLevel ?? 'High'
+          SeverityThreshold: raiPolicy.?prompt.?sexual.?SeverityThreshold ?? 'High'
           blocking: raiPolicy.?prompt.?sexual.?blocking ?? true
           enabled: raiPolicy.?prompt.?sexual.?enabled ?? true
           source: 'Prompt'
         }
         {
           name: 'sexual'
-          allowedContentLevel: raiPolicy.?completion.?sexual.?allowedContentLevel ?? 'High'
+          SeverityThreshold: raiPolicy.?completion.?sexual.?SeverityThreshold ?? 'High'
           blocking: raiPolicy.?completion.?sexual.?blocking ?? true
           enabled: raiPolicy.?completion.?sexual.?enabled ?? true
           source: 'Completion'
         }
         {
           name: 'selfharm'
-          allowedContentLevel: raiPolicy.?prompt.?selfharm.?allowedContentLevel ?? 'High'
+          SeverityThreshold: raiPolicy.?prompt.?selfharm.?SeverityThreshold ?? 'High'
           blocking: raiPolicy.?prompt.?selfharm.?blocking ?? true
           enabled: raiPolicy.?prompt.?selfharm.?enabled ?? true
           source: 'Prompt'
         }
         {
           name: 'selfharm'
-          allowedContentLevel: raiPolicy.?completion.?selfharm.?allowedContentLevel ?? 'High'
+          SeverityThreshold: raiPolicy.?completion.?selfharm.?SeverityThreshold ?? 'High'
           blocking: raiPolicy.?completion.?selfharm.?blocking ?? true
           enabled: raiPolicy.?completion.?selfharm.?enabled ?? true
           source: 'Completion'
@@ -261,7 +277,7 @@ resource raiPolicy 'Microsoft.CognitiveServices/accounts/raiPolicies@2024-04-01-
 ]
 
 @batchSize(1)
-resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2024-04-01-preview' = [
+resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = [
   for deployment in deployments: {
     parent: aiServices
     name: deployment.name
@@ -307,16 +323,16 @@ resource aiServicesDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@202
 }
 
 @description('ID for the deployed AI Services resource.')
-output id string = aiServices.id
+output id string = aiServicesReuse ? existingAccount.id: aiServices.id
 @description('Name for the deployed AI Services resource.')
-output name string = aiServices.name
+output name string = aiServicesReuse ? existingAccount.name: aiServices.name
 @description('Endpoint for the deployed AI Services resource.')
-output endpoint string = aiServices.properties.endpoint
+output endpoint string = aiServicesReuse ? existingAccount.properties.endpoint: aiServices.properties.endpoint
 @description('Host for the deployed AI Services resource.')
-output host string = split(aiServices.properties.endpoint, '/')[2]
+output host string = aiServicesReuse ? split(existingAccount.properties.endpoint, '/')[2] : split(aiServices.properties.endpoint, '/')[2]
 @description('Endpoint for the Azure OpenAI API.')
-output openAIEndpoint string = aiServices.properties.endpoints['OpenAI Language Model Instance API']
+output openAIEndpoint string = aiServicesReuse ? existingAccount.properties.endpoints['OpenAI Language Model Instance API'] : aiServices.properties.endpoints['OpenAI Language Model Instance API']
 @description('Host for the Azure OpenAI API.')
-output openAIHost string = split(aiServices.properties.endpoints['OpenAI Language Model Instance API'], '/')[2]
+output openAIHost string = aiServicesReuse ? split(existingAccount.properties.endpoints['OpenAI Language Model Instance API'], '/')[2] : split(aiServices.properties.endpoints['OpenAI Language Model Instance API'], '/')[2]
 @description('Principal ID for the deployed AI Services resource.')
-output principalId string = identityId == null ? aiServices.identity.principalId : identityId!
+output principalId string = identityPrincipalId == null ? aiServices.identity.principalId : identityPrincipalId!

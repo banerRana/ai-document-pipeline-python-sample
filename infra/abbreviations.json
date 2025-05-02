@@ -53,6 +53,9 @@
     "powerBIEmbedded": "pbi-",
     "timeSeriesInsightsEnvironment": "tsi-"
   },
+  "configuration" : {
+    "appConfiguration": "appconfig-"
+  },
   "compute": {
     "appServiceEnvironment": "ase-",
     "appServicePlan": "asp-",
@@ -76,7 +79,7 @@
     "restorePointCollection": "rpc-",
     "snapshot": "snap-",
     "staticWebApp": "stapp-",
-    "virtualMachine": "vm",
+    "virtualMachine": "vm-",
     "virtualMachineScaleSet": "vmss-",
     "virtualMachineMaintenanceConfiguration": "mc-",
     "virtualMachineStorageAccount": "stvm",
@@ -153,6 +156,7 @@
     "recoveryServicesVault": "rsv-"
   },
   "networking": {
+    "aivnet" : "aivnet-",
     "applicationGateway": "agw-",
     "applicationSecurityGroup": "asg-",
     "cdnProfile": "cdnp-",
@@ -200,8 +204,9 @@
   "security": {
     "bastion": "bas-",
     "keyVault": "kv-",
+    "privateEndpoint": "pe-",
     "keyVaultManagedHSM": "kvmhsm-",
-    "managedIdentity": "id-",
+    "managedIdentity": "uai-",
     "sshKey": "sshkey-",
     "vpnGateway": "vpng-",
     "vpnConnection": "vcn-",
