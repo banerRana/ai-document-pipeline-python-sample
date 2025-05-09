@@ -14,7 +14,7 @@ Push-Location -Path $PSScriptRoot
 $principalId = (az ad signed-in-user show --query id -o tsv)
 
 if ($IsWindows) {
-    $identityArray = '[{""principalId"":""' + $($principalId) + '"",""principalType":""User""}]'
+    $identityArray = "[{'principalId':'$($principalId)','principalType':'User'}]"
 }
 else {
     $identityArray = '[{"principalId":"' + $($principalId) + '","principalType":"User"}]'
