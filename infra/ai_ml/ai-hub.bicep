@@ -66,11 +66,13 @@ param diagnosticSettings diagnosticSettingsInfo = {
   ]
 }
 
-resource aiServices 'Microsoft.CognitiveServices/accounts@2024-04-01-preview' existing = {
+// Deployments
+
+resource aiServices 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' existing = {
   name: aiServicesName
 }
 
-resource aiHub 'Microsoft.MachineLearningServices/workspaces@2024-04-01-preview' = {
+resource aiHub 'Microsoft.MachineLearningServices/workspaces@2025-01-01-preview' = {
   name: name
   location: location
   tags: tags
@@ -102,7 +104,7 @@ resource aiHub 'Microsoft.MachineLearningServices/workspaces@2024-04-01-preview'
     primaryUserAssignedIdentity: identityId
   }
 
-  resource aiServicesConnection 'connections@2024-04-01-preview' = {
+  resource aiServicesConnection 'connections@2025-01-01-preview' = {
     name: '${aiServicesName}-connection'
     properties: {
       category: 'AIServices'
@@ -139,7 +141,7 @@ resource assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [
   }
 ]
 
-resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = if (logAnalyticsWorkspaceName != null) {
+resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2025-02-01' existing = if (logAnalyticsWorkspaceName != null) {
   name: logAnalyticsWorkspaceName!
 }
 
@@ -153,12 +155,14 @@ resource aiHubDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-
   }
 }
 
+// Outputs
+
 @description('ID for the deployed AI Hub resource.')
 output id string = aiHub.id
 @description('Name for the deployed AI Hub resource.')
 output name string = aiHub.name
 @description('Identity principal ID for the deployed AI Hub resource.')
-output identityPrincipalId string? = identityId == null ? aiHub.identity.principalId : identityId
+output identityPrincipalId string = identityId == null ? aiHub.identity.principalId : identityId!
 @description('AI Services connection name for the deployed AI Hub resource.')
 output aiServicesConnectionName string = aiHub::aiServicesConnection.name
 @description('OpenAI specific connection name for the deployed AI Hub resource.')

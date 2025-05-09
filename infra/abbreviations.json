@@ -1,7 +1,9 @@
 {
   "ai": {
     "aiSearch": "srch-",
-    "aiServices": "aisa-",
+    "aiServices": "ais-",
+    "aiHub": "hub-",
+    "aiHubProject": "proj-",
     "aiVideoIndexer": "avi-",
     "machineLearningWorkspace": "mlw-",
     "openAIService": "oai-",
@@ -17,9 +19,7 @@
     "immersiveReader": "ir-",
     "languageService": "lang-",
     "speechService": "spch-",
-    "translator": "trsl-",
-    "aiHub": "aih-",
-    "aiHubProject": "aihp-"
+    "translator": "trsl-"
   },
   "analytics": {
     "analysisServicesServer": "as",
@@ -52,9 +52,6 @@
     "provisioningServicesCertificate": "pcert-",
     "powerBIEmbedded": "pbi-",
     "timeSeriesInsightsEnvironment": "tsi-"
-  },
-  "configuration" : {
-    "appConfiguration": "appconfig-"
   },
   "compute": {
     "appServiceEnvironment": "ase-",
@@ -156,7 +153,6 @@
     "recoveryServicesVault": "rsv-"
   },
   "networking": {
-    "aivnet" : "aivnet-",
     "applicationGateway": "agw-",
     "applicationSecurityGroup": "asg-",
     "cdnProfile": "cdnp-",
@@ -204,9 +200,8 @@
   "security": {
     "bastion": "bas-",
     "keyVault": "kv-",
-    "privateEndpoint": "pe-",
     "keyVaultManagedHSM": "kvmhsm-",
-    "managedIdentity": "uai-",
+    "managedIdentity": "id-",
     "sshKey": "sshkey-",
     "vpnGateway": "vpng-",
     "vpnConnection": "vcn-",

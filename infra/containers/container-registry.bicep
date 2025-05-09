@@ -6,40 +6,33 @@ param name string
 param location string = resourceGroup().location
 @description('Tags for the resource.')
 param tags object = {}
-@description('MSI Id.')
+
+@description('ID for the Managed Identity associated with the Container Registry instance. Defaults to the system-assigned identity.')
 param identityId string?
-
-param containerRegistryReuse bool
-param existingContainerRegistryResourceGroupName string
-
-@export()
-@description('SKU information for Container Registry.')
-type skuInfo = {
-  @description('Name of the SKU.')
-  name: 'Basic' | 'Premium' | 'Standard'
-}
-
 @description('Whether to enable an admin user that has push and pull access. Defaults to false.')
 param adminUserEnabled bool = false
-@description('Whether to allow public network access. Defaults to Enabled.')
+@description('Whether to allow public network access. Defaults to Disabled.')
 @allowed([
   'Disabled'
   'Enabled'
 ])
-param publicNetworkAccess string = 'Enabled'
-@description('Container Registry SKU. Defaults to Basic.')
+param publicNetworkAccess string = 'Disabled'
+@description('Specifies whether zone redundancy is enabled. Defaults to Disabled.')
+@allowed([
+  'Disabled'
+  'Enabled'
+])
+param zoneRedundancy string = 'Disabled'
+@description('Container Registry SKU. Defaults to Standard.')
 param sku skuInfo = {
-  name: 'Basic'
+  name: 'Standard'
 }
 @description('Role assignments to create for the Container Registry.')
 param roleAssignments roleAssignmentInfo[] = []
 
-resource existingContainerRegistry 'Microsoft.ContainerRegistry/registries@2024-11-01-preview' existing = if (containerRegistryReuse) {
-  scope: resourceGroup(existingContainerRegistryResourceGroupName)
-  name: name
-}
+// Deployments
 
-resource containerRegistry 'Microsoft.ContainerRegistry/registries@2024-11-01-preview' = if (!containerRegistryReuse) {
+resource containerRegistry 'Microsoft.ContainerRegistry/registries@2025-04-01' = {
   name: name
   location: location
   tags: tags
@@ -54,12 +47,12 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2024-11-01-pr
   sku: sku
   properties: {
     adminUserEnabled: adminUserEnabled
+    zoneRedundancy: zoneRedundancy
     publicNetworkAccess: publicNetworkAccess
     networkRuleBypassOptions: 'AzureServices'
     networkRuleSet: {
       defaultAction: 'Deny'
-      ipRules: [
-      ]
+      ipRules: []
     }
   }
 }
@@ -76,9 +69,22 @@ resource assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [
   }
 ]
 
+// Outputs
+
 @description('ID for the deployed Container Registry resource.')
-output id string = containerRegistryReuse ? existingContainerRegistry.id: containerRegistry.id
+output id string = containerRegistry.id
 @description('Name for the deployed Container Registry resource.')
-output name string = containerRegistryReuse ? existingContainerRegistry.name : containerRegistry.name
+output name string = containerRegistry.name
 @description('Login server for the deployed Container Registry resource.')
-output loginServer string = containerRegistryReuse ? existingContainerRegistry.properties.loginServer : containerRegistry.properties.loginServer
+output loginServer string = containerRegistry.properties.loginServer
+@description('Principal ID for the deployed AI Services resource.')
+output identityPrincipalId string = identityId == null ? containerRegistry.identity.principalId : identityId!
+
+// Definitions
+
+@export()
+@description('SKU information for Container Registry.')
+type skuInfo = {
+  @description('Name of the SKU.')
+  name: 'Basic' | 'Premium' | 'Standard'
+}

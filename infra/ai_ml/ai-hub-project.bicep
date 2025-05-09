@@ -51,6 +51,8 @@ param diagnosticSettings diagnosticSettingsInfo = {
   ]
 }
 
+// Deployments
+
 resource aiHub 'Microsoft.MachineLearningServices/workspaces@2025-01-01-preview' existing = {
   name: aiHubName
 }
@@ -104,7 +106,7 @@ resource assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [
   }
 ]
 
-resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = if (logAnalyticsWorkspaceName != null) {
+resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2025-02-01' existing = if (logAnalyticsWorkspaceName != null) {
   name: logAnalyticsWorkspaceName!
 }
 
@@ -118,9 +120,11 @@ resource aiHubProjectDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@2
   }
 }
 
+// Outputs
+
 @description('ID for the deployed AI Hub project resource.')
 output id string = aiHubProject.id
 @description('Name for the deployed AI Hub project resource.')
 output name string = aiHubProject.name
 @description('Identity principal ID for the deployed AI Hub project resource.')
-output identityPrincipalId string? = identityId == null ? aiHubProject.identity.principalId : identityId
+output identityPrincipalId string = identityId == null ? aiHubProject.identity.principalId : identityId!

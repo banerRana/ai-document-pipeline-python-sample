@@ -5,6 +5,41 @@ param location string = resourceGroup().location
 @description('Tags for the resource.')
 param tags object = {}
 
+@description('Log Analytics Workspace SKU. Defaults to PerGB2018.')
+param sku skuInfo = {
+  name: 'PerGB2018'
+}
+@description('Retention period (in days) for the Log Analytics Workspace. Defaults to 30.')
+param retentionInDays int = 30
+
+// Deployments
+
+resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2025-02-01' = {
+  name: name
+  location: location
+  tags: tags
+  properties: {
+    retentionInDays: retentionInDays
+    features: {
+      enableLogAccessUsingOnlyResourcePermissions: true
+    }
+    sku: sku
+    publicNetworkAccessForIngestion: 'Enabled'
+    publicNetworkAccessForQuery: 'Enabled'
+  }
+}
+
+// Outputs
+
+@description('ID for the deployed Log Analytics Workspace resource.')
+output id string = logAnalyticsWorkspace.id
+@description('Name for the deployed Log Analytics Workspace resource.')
+output name string = logAnalyticsWorkspace.name
+@description('Customer ID for the deployed Log Analytics Workspace resource.')
+output customerId string = logAnalyticsWorkspace.properties.customerId
+
+// Definitions
+
 @export()
 @description('SKU information for Log Analytics Workspace.')
 type skuInfo = {
@@ -54,32 +89,3 @@ type diagnosticSettingsInfo = {
   @description('Diagnostic settings for metrics.')
   metrics: diagnosticSettingsMetricConfigInfo[]
 }
-
-@description('Log Analytics Workspace SKU. Defaults to PerGB2018.')
-param sku skuInfo = {
-  name: 'PerGB2018'
-}
-@description('Retention period (in days) for the Log Analytics Workspace. Defaults to 30.')
-param retentionInDays int = 30
-
-resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
-  name: name
-  location: location
-  tags: tags
-  properties: {
-    retentionInDays: retentionInDays
-    features: {
-      enableLogAccessUsingOnlyResourcePermissions: true
-    }
-    sku: sku
-    publicNetworkAccessForIngestion: 'Enabled'
-    publicNetworkAccessForQuery: 'Enabled'
-  }
-}
-
-@description('ID for the deployed Log Analytics Workspace resource.')
-output id string = logAnalyticsWorkspace.id
-@description('Name for the deployed Log Analytics Workspace resource.')
-output name string = logAnalyticsWorkspace.name
-@description('Customer ID for the deployed Log Analytics Workspace resource.')
-output customerId string = logAnalyticsWorkspace.properties.customerId

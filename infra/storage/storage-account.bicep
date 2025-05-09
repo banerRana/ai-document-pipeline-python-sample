@@ -6,40 +6,6 @@ param name string
 param location string = resourceGroup().location
 @description('Tags for the resource.')
 param tags object = {}
-@description('MSI id for resource.')
-param identityId string?
-@description('Whether to enable public network access. Defaults to Enabled.')
-@allowed([
-  'Enabled'
-  'Disabled'
-])
-param publicNetworkAccess string = 'Enabled'
-
-@export()
-@description('SKU information for Storage Account.')
-type skuInfo = {
-  @description('Name of the SKU.')
-  name:
-    | 'Premium_LRS'
-    | 'Premium_ZRS'
-    | 'Standard_GRS'
-    | 'Standard_GZRS'
-    | 'Standard_LRS'
-    | 'Standard_RAGRS'
-    | 'Standard_RAGZRS'
-    | 'Standard_ZRS'
-}
-
-@export()
-@description('Information about the blob container retention policy for the Storage Account.')
-type blobContainerRetentionInfo = {
-  @description('Indicates whether permanent deletion is allowed for blob containers.')
-  allowPermanentDelete: bool
-  @description('Number of days to retain blobs.')
-  days: int
-  @description('Indicates whether the retention policy is enabled.')
-  enabled: bool
-}
 
 @description('Storage Account SKU. Defaults to Standard_LRS.')
 param sku skuInfo = {
@@ -59,10 +25,22 @@ param blobContainerRetention blobContainerRetentionInfo = {
 }
 @description('Whether to disable local (key-based) authentication. Defaults to true.')
 param disableLocalAuth bool = true
+@description('ID for the Managed Identity associated with the Storage Account. Defaults to the system-assigned identity.')
+param identityId string?
+@description('Whether to enable public network access. Defaults to Disabled.')
+@allowed([
+  'Enabled'
+  'Disabled'
+])
+param publicNetworkAccess string = 'Disabled'
+@description('Default network access control action when no other rules match. This is only used after the bypass property has been evaluated. Defaults to Deny.')
+param networkAclsDefaultAction 'Allow' | 'Deny' = 'Deny'
 @description('Role assignments to create for the Storage Account.')
 param roleAssignments roleAssignmentInfo[] = []
 
-resource storageAccount 'Microsoft.Storage/storageAccounts@2024-01-01' = {
+// Deployments
+
+resource storageAccount 'Microsoft.Storage/StorageAccounts@2024-01-01' = {
   name: name
   location: location
   tags: tags
@@ -79,10 +57,8 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2024-01-01' = {
   properties: {
     accessTier: startsWith(sku.name, 'Premium') ? 'Premium' : accessTier
     networkAcls: {
-      defaultAction: 'Allow'
+      defaultAction: networkAclsDefaultAction
       bypass: 'AzureServices'
-      ipRules: []
-      virtualNetworkRules: []
     }
     publicNetworkAccess: publicNetworkAccess
     allowSharedKeyAccess: !disableLocalAuth
@@ -127,7 +103,37 @@ resource assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [
   }
 ]
 
+// Outputs
+
 @description('ID for the deployed Storage Account resource.')
 output id string = storageAccount.id
 @description('Name for the deployed Storage Account resource.')
 output name string = storageAccount.name
+
+// Definitions
+
+@export()
+@description('SKU information for Storage Account.')
+type skuInfo = {
+  @description('Name of the SKU.')
+  name:
+    | 'Premium_LRS'
+    | 'Premium_ZRS'
+    | 'Standard_GRS'
+    | 'Standard_GZRS'
+    | 'Standard_LRS'
+    | 'Standard_RAGRS'
+    | 'Standard_RAGZRS'
+    | 'Standard_ZRS'
+}
+
+@export()
+@description('Information about the blob container retention policy for the Storage Account.')
+type blobContainerRetentionInfo = {
+  @description('Indicates whether permanent deletion is allowed for blob containers.')
+  allowPermanentDelete: bool
+  @description('Number of days to retain blobs.')
+  days: int
+  @description('Indicates whether the retention policy is enabled.')
+  enabled: bool
+}
