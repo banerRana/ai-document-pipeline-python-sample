@@ -16,7 +16,7 @@ $identity = @{
     "principalId"   = "$principalId"
     "principalType" = "User"
 }
-$identityArray = ConvertTo-Json @($identity) -Depth 5 -Compress
+$identityArray = (ConvertTo-Json @($identity) -Depth 5 -Compress).Replace("'", '"')
 
 if ($WhatIf) {
     Write-Host "Previewing infrastructure deployment. No changes will be made."
