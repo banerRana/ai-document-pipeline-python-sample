@@ -1344,7 +1344,6 @@ module appConfig './developer_tools/app-configuration-store.bicep' = {
     tags: union(tags, {})
     appSettings: !deployAppConfigValues ? [] : appSettings
     secureAppSettings: !deployAppConfigValues ? [] : keyVault.outputs.secrets
-    publicNetworkAccess: networkIsolation ? 'Disabled' : 'Enabled'
     roleAssignments: concat(appConfigDataOwnerAssignments, [])
   }
 }
