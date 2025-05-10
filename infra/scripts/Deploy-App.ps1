@@ -8,8 +8,9 @@ $InfrastructureOutputs = Get-Content -Path $InfrastructureOutputsPath -Raw | Con
 
 $AzureResourceGroup = $InfrastructureOutputs.environmentInfo.value.azureResourceGroup
 $ContainerRegistryName = $InfrastructureOutputs.environmentInfo.value.containerRegistryName
+$ContainerName = $InfrastructureOutputs.environmentInfo.value.applicationName
+$ContainerAppName = $InfrastructureOutputs.environmentInfo.value.applicationContainerAppName
 
-$ContainerName = "ai-document-pipeline"
 $ContainerVersion = (Get-Date -Format "yyMMddHHmm")
 $ContainerImageName = "${ContainerName}:${ContainerVersion}"
 $AzureContainerImageName = "${ContainerRegistryName}.azurecr.io/${ContainerImageName}"
@@ -35,7 +36,7 @@ Write-Host "Deploying Azure Container Apps for ${ContainerName}..."
 
 $acrLogin = $(az acr show --name $ContainerRegistryName --resource-group $AzureResourceGroup -o json | ConvertFrom-Json).loginServer
 
-az containerapp update --name $AzureContainerImageName --resource-group $AzureResourceGroup --image "$acrLogin/$ContainerImageName"
+az containerapp update --name $ContainerAppName --resource-group $AzureResourceGroup --image "$acrLogin/$ContainerImageName"
 
 Write-Host "Cleaning up old ${ContainerName} images in Azure Container Registry..."
 
