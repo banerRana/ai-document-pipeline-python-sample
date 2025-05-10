@@ -36,10 +36,6 @@ Write-Host "Deploying Azure Container Apps for ${ContainerName}..."
 
 $acrLogin = $(az acr show --name $ContainerRegistryName --resource-group $AzureResourceGroup -o json | ConvertFrom-Json).loginServer
 
-az containerapp update --name $ContainerAppName --resource-group $AzureResourceGroup --image "$acrLogin/$ContainerImageName"
-
-Write-Host "Cleaning up old ${ContainerName} images in Azure Container Registry..."
-
-az acr run --cmd "acr purge --filter '${ContainerName}:.*' --untagged --ago 1h" --registry $ContainerRegistryName --resource-group $AzureResourceGroup /dev/null
+az containerapp update --name $ContainerAppName --resource-group $AzureResourceGroup --image "$acrLogin/$ContainerImageName" --revision-suffix $ContainerVersion
 
 Pop-Location
