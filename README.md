@@ -47,7 +47,7 @@ This project provides the techniques and patterns to combine the capabilities of
 - **Data validation**: Data is validated at every step of the process, including sub-orchestrations, ensuring that you not only receive the final output, but also the intermediate data at every step of the process.
 - **OpenTelemetry**: The pipeline is configured to also support OpenTelemetry for gathering logs, metrics, and traces of the pipeline. This allows for easy monitoring and debugging of the pipeline, as well as integration with Azure Monitor and other observability tools.
 - **Flexible configuration**: Using Durable Functions and separating out concerns to individual activities, the pipeline can be easily configured to support any document processing use case. The modular and extensible approach allows you to add or remove activities as needed.
-- **Secure backend**: Azure Managed Identity and Azure RBAC least privilege access is used to secure the pipeline and ensure that only authorized services can access the Azure resources used in the pipeline.
+- **Secure by default**: Azure Managed Identity and Azure RBAC least privilege access is used to secure the pipeline and ensure that only authorized services can access the Azure resources used in the pipeline. Additionally, opt-in to deploying the infrastructure using zero-trust principles with virtual networks and private endpoints to isolate the Azure resources from the public internet.
 - **Infrastructure-as-code**: Azure Bicep modules and PowerShell deployment scripts are provided to define the Azure infrastructure for the document processing pipeline, allowing for easy deployment and management of the resources required.
 
 ## Understanding the Pipeline
@@ -205,7 +205,7 @@ The pipeline can be extended to support any document processing use case, includ
 
 ## Setup
 
-The repository contains a [devcontainer](./.devcontainer/README.md) that contains all the necessary tools and dependencies to run the code.
+The repository contains a [devcontainer](./.devcontainer/README.md) that contains all the necessary tools and dependencies to run the application, and deploy the Azure infrastructure.
 
 ### Setup on GitHub Codespaces
 
@@ -244,8 +244,8 @@ The sample project is designed to be deployed as a containerized application usi
 
 The deployment is split into two parts, run by separate PowerShell scripts using the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli):
 
-- **[Core Infrastructure](./infra/core.bicep)**: Deploys all of the necessary core components that are required for the document processing pipeline, including the Azure AI services, Azure Storage account, Azure Container Registry, and Azure Container Apps environment. See [Deploy Core Infrastructure PowerShell script](./infra/Deploy-Infrastructure.ps1) for deployment via CLI.
-- **[Application Deployment](./infra/apps/AIDocumentPipeline/app.bicep)**: Deploys the containerized application to the Azure Container Apps environment. See [Deploy App PowerShell script](./infra/apps/AIDocumentPipeline/Deploy-App.ps1) for deployment via CLI.
+- **[Core Infrastructure](./infra/core.bicep)**: Deploys all of the necessary core components that are required for the document processing pipeline, including the Azure AI services, Azure Storage account, Azure Container Registry, and Azure Container Apps environment. See [Deploy Core Infrastructure PowerShell script](./infra/scripts/Deploy-Infrastructure.ps1) for deployment via CLI.
+- **[Application Deployment](./infra/apps/AIDocumentPipeline/app.bicep)**: Deploys the containerized application to the Azure Container Apps environment. See [Deploy App PowerShell script](./infra/scripts/Deploy-App.ps1) for deployment via CLI.
 
 ### Setup the local environment
 
