@@ -400,7 +400,7 @@ module containerApp '../../containers/container-app.bicep' = {
         value: '0'
       }
       {
-        name: 'allow_environment_variables'
+        name: 'ALLOW_ENVIRONMENT_VARIABLES'
         value: 'true'
       }
     ]
