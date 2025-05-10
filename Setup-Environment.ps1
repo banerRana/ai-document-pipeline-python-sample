@@ -13,11 +13,11 @@ Write-Host "Starting environment setup..."
 
 if ($SkipInfrastructure) {
     Write-Host "Skipping infrastructure deployment..."
-    $InfrastructureOutputs = Get-Content -Path './infra/InfrastructureOutputs.json' -Raw | ConvertFrom-Json
+    $InfrastructureOutputs = Get-Content -Path './infra/scripts/InfrastructureOutputs.json' -Raw | ConvertFrom-Json
 }
 else {
     Write-Host "Deploying infrastructure..."
-    $InfrastructureOutputs = (./infra/Deploy-Infrastructure.ps1 `
+    $InfrastructureOutputs = (./infra/scripts/Deploy-Infrastructure.ps1 `
             -DeploymentName $DeploymentName `
             -Location $Location `
             -WhatIf:$WhatIf)
@@ -56,6 +56,6 @@ if ($IsLocal) {
 else {
     Write-Host "Deploying AI Document Pipeline app to Azure..."
 
-    $AppOutputs = (./infra/apps/AIDocumentPipeline/Deploy-App.ps1 `
-            -InfrastructureOutputsPath './infra/InfrastructureOutputs.json')
+    $AppOutputs = (./infra/scripts/Deploy-App.ps1 `
+            -InfrastructureOutputsPath './infra/scripts/InfrastructureOutputs.json')
 }
