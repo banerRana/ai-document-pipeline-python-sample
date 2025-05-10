@@ -1931,7 +1931,6 @@ output environmentInfo object = {
   workloadName: workloadName
   azureResourceGroup: resourceGroup.name
   azureLocation: resourceGroup.location
-  applicationName: applicationName
   containerRegistryName: containerRegistry.outputs.name
   azureAIServicesEndpoint: aiServices.outputs.endpoint
   azureOpenAIEndpoint: aiServices.outputs.openAIEndpoint
@@ -1941,4 +1940,7 @@ output environmentInfo object = {
   appConfigurationName: appConfig.outputs.name
   azureAIServicesName: aiServices.outputs.name
   azureContainerAppsEnvironment: containerAppsEnvironment.outputs.name
+  applicationName: applicationName
+  applicationContainerAppName: documentPipelineApp.outputs.appInfo.name
+  applicationContainerAppUrl: documentPipelineApp.outputs.appInfo.url
 }
