@@ -1041,13 +1041,14 @@ module databaseNsg './networking/network-security-group.bicep' = if (networkIsol
   }
 }
 
-module vnet './networking/virtual-network.bicep' = if (networkIsolation && !_vnetReuse) {
+module vnet './networking/virtual-network.bicep' = if (networkIsolation) {
   name: _vnetName
   scope: resourceGroup
   params: {
     name: _vnetName
     location: location
     tags: union(tags, {})
+    deploy: !_vnetReuse
     addressPrefixes: [_vnetAddress]
     subnets: [
       {
