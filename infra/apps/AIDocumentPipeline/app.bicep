@@ -336,15 +336,15 @@ module containerApp '../../containers/container-app.bicep' = {
         value: 'https://${appConfigStoreRef.name}.azconfig.io'
       }
       {
-        name: '$AzureWebJobsStorage__accountName'
+        name: 'AzureWebJobsStorage__accountName'
         value: storageAccountRef.name
       }
       {
-        name: '$AzureWebJobsStorage__credential'
+        name: 'AzureWebJobsStorage__credential'
         value: 'managedidentity'
       }
       {
-        name: '$AzureWebJobsStorage__clientId'
+        name: 'AzureWebJobsStorage__clientId'
         value: applicationManagedIdentity.outputs.clientId
       }
       {
