@@ -6,9 +6,6 @@
     "roleBasedAccessControlAdministrator": "f58310d9-a9f6-439a-9e8d-f62e7b41a168",
     "userAccessAdministrator": "18d7d88d-d35e-4fb5-a5c3-7773c20a72d9"
   },
-  "configuration" :{
-    "appConfigurationDataOwner" :"5ae67dd6-50cb-40e7-96ff-dc2bfa4b606b"
-  },
   "compute": {
     "classicVirtualMachineContributor": "d73bb868-a0df-4d4d-bd69-98a00b01fccb",
     "dataOperatorForManagedDisks": "959f8984-c045-4866-89c7-12bf9737be2e",

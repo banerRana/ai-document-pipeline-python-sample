@@ -12,23 +12,25 @@ Write-Host "Starting infrastructure deployment..."
 Push-Location -Path $PSScriptRoot
 
 $principalId = (az ad signed-in-user show --query id -o tsv)
-$identity = @{
-    "principalId"   = "$principalId"
-    "principalType" = "User"
-}
-$identityArray = ConvertTo-Json @($identity) -Depth 5 -Compress
 
-if ($whatIf) {
+if ($IsWindows) {
+    $identityArray = "[{'principalId':'$($principalId)','principalType':'User'}]"
+}
+else {
+    $identityArray = '[{"principalId":"' + $($principalId) + '","principalType":"User"}]'
+}
+
+if ($WhatIf) {
     Write-Host "Previewing infrastructure deployment. No changes will be made."
 
     $result = (az deployment sub what-if `
-            --name $deploymentName `
-            --location $location `
+            --name $DeploymentName `
+            --location $Location `
             --template-file '../core.bicep' `
             --parameters '../core.bicepparam' `
-            --parameters workloadName=$deploymentName `
-            --parameters location=$location `
-            --parameters identities="[]" `
+            --parameters workloadName=$DeploymentName `
+            --parameters location=$Location `
+            --parameters identities="$identityArray" `
             --no-pretty-print) | ConvertFrom-Json
 
     if (-not $result) {
@@ -42,13 +44,13 @@ if ($whatIf) {
 }
 
 $deploymentOutputs = (az deployment sub create `
-        --name $deploymentName `
-        --location $location `
+        --name $DeploymentName `
+        --location $Location `
         --template-file '../core.bicep' `
         --parameters '../core.bicepparam' `
-        --parameters workloadName=$deploymentName `
-        --parameters location=$location `
-        --parameters identities="[]" `
+        --parameters workloadName=$DeploymentName `
+        --parameters location=$Location `
+        --parameters identities="$identityArray" `
         --query properties.outputs -o json) | ConvertFrom-Json
 
 if (-not $deploymentOutputs) {

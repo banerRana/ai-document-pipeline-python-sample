@@ -1,3 +1,26 @@
+---
+name: Azure AI Document Processing Pipeline using Python Durable Functions
+description: A customizable template for building and deploying AI-powered document processing pipelines using Durable Functions orchestrations, incorporating Azure AI services and Azure OpenAI LLMs.
+languages:
+  - python
+  - bicep
+  - azdeveloper
+  - powershell
+products:
+  - azure
+  - ai-services
+  - azure-openai
+  - document-intelligence
+  - azure-blob-storage
+  - azure-queue-storage
+  - azure-container-apps
+  - azure-app-configuration
+  - azure-container-registry
+  - azure-key-vault
+page_type: sample
+urlFragment: azure-ai-document-processing-pipeline-python
+---
+
 # Azure AI Document Processing Pipeline using Python Durable Functions
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/jamesmcroft/azure-ai-document-pipeline-python-sample?quickstart=1)
@@ -15,14 +38,14 @@ This project is a customizable template for building and deploying AI-powered do
 - [Example pipeline output](#example-pipeline-output)
 - [Pre-built Classification & Extraction Scenarios](#pre-built-classification--extraction-scenarios)
 - [Additional Use Cases](#additional-use-cases)
-- [Setup](#setup)
+- [Development Environment](#development-environment)
   - [Setup on GitHub Codespaces](#setup-on-github-codespaces)
   - [Setup on Local Machine](#setup-on-local-machine)
-- [Run the sample](#run-the-sample)
-  - [Setup the local environment](#setup-the-local-environment)
-  - [Setup the complete Azure environment](#setup-the-complete-azure-environment)
-  - [Testing the document processing pipeline](#testing-the-document-processing-pipeline)
-    - [Via the HTTP trigger](#via-the-http-trigger)
+- [Deployment](#deployment)
+  - [Deploying to Azure](#deploying-to-azure)
+  - [Running the application locally](#running-the-application-locally)
+  - [Testing the pre-built pipeline](#testing-the-pre-built-pipeline)
+    - [Via the HTTP Trigger](#via-the-http-trigger)
     - [Via the Azure Storage queue](#via-the-azure-storage-queue)
 - [FAQ](#faq)
 - [Contributing](#contributing)
@@ -47,7 +70,7 @@ This project provides the techniques and patterns to combine the capabilities of
 - **Data validation**: Data is validated at every step of the process, including sub-orchestrations, ensuring that you not only receive the final output, but also the intermediate data at every step of the process.
 - **OpenTelemetry**: The pipeline is configured to also support OpenTelemetry for gathering logs, metrics, and traces of the pipeline. This allows for easy monitoring and debugging of the pipeline, as well as integration with Azure Monitor and other observability tools.
 - **Flexible configuration**: Using Durable Functions and separating out concerns to individual activities, the pipeline can be easily configured to support any document processing use case. The modular and extensible approach allows you to add or remove activities as needed.
-- **Secure backend**: Azure Managed Identity and Azure RBAC least privilege access is used to secure the pipeline and ensure that only authorized services can access the Azure resources used in the pipeline.
+- **Secure by default**: Azure Managed Identity and Azure RBAC least privilege access is used to secure the pipeline and ensure that only authorized services can access the Azure resources used in the pipeline. Additionally, opt-in to deploying the infrastructure using zero-trust principles with virtual networks and private endpoints to isolate the Azure resources from the public internet.
 - **Infrastructure-as-code**: Azure Bicep modules and PowerShell deployment scripts are provided to define the Azure infrastructure for the document processing pipeline, allowing for easy deployment and management of the resources required.
 
 ## Understanding the Pipeline
@@ -203,9 +226,9 @@ The pipeline can be extended to support any document processing use case, includ
 - **Bounded/continuous documents**: Ingest single PDFs that contain one or more documents, also known as continuous documents, detect the boundaries of each using classification techniques, and perform extractions on each sub-document.
 - **General documents**: Regardless of the document type and format, whether PDF, Word, or scanned image, extract structured data from the files into your own defined schema.
 
-## Setup
+## Development Environment
 
-The repository contains a [devcontainer](./.devcontainer/README.md) that contains all the necessary tools and dependencies to run the code.
+The repository contains a [devcontainer](./.devcontainer/README.md) that contains all the necessary tools and dependencies to run the application, and deploy the Azure infrastructure.
 
 ### Setup on GitHub Codespaces
 
@@ -238,82 +261,171 @@ To setup a local development environment, follow these steps:
 
 Once the Dev Container is up and running, continue to the [run the sample](#run-the-sample) section.
 
-## Run the sample
+## Deployment
 
 The sample project is designed to be deployed as a containerized application using Azure Container Apps. The deployment is defined using Azure Bicep in the [infra folder](./infra/).
 
-The deployment is split into two parts, run by separate PowerShell scripts using the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli):
+The deployment is split into two parts, run by separate scripts using the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli):
 
-- **[Core Infrastructure](./infra/main.bicep)**: Deploys all of the necessary core components that are required for the document processing pipeline, including the Azure AI services, Azure Storage account, Azure Container Registry, and Azure Container Apps environment. See [Deploy Core Infrastructure PowerShell script](./infra/Deploy-Infrastructure.ps1) for deployment via CLI.
-- **[Application Deployment](./infra/apps/AIDocumentPipeline/app.bicep)**: Deploys the containerized application to the Azure Container Apps environment. See [Deploy App PowerShell script](./infra/apps/AIDocumentPipeline/Deploy-App.ps1) for deployment via CLI.
-
-### Setup the local environment
-
-To setup an environment locally, simply run the [Setup-Environment.ps1](./Setup-Environment.ps1) script from the root of the project:
+- **[Core Infrastructure](./infra/core.bicep)**: Deploys all of the necessary core components that are required for the document processing pipeline, including the Azure AI services, Azure Storage account, Azure Container Registry, and Azure Container Apps environment. See **Deploy Core Infrastructure** [PowerShell script](./infra/scripts/Deploy-Infrastructure.ps1) or [Bash script](./infra/scripts/deploy_infrastructure.sh) for deployment via CLI.
+- **[Application Deployment](./infra/apps/AIDocumentPipeline/app.bicep)**: Deploys the containerized application to the Azure Container Apps environment. See **Deploy App** [PowerShell script](./infra/scripts/Deploy-App.ps1) or [Bash script](./infra/scripts/deploy_app.sh) for deployment via CLI.
 
 > [!IMPORTANT]
-> Docker Desktop must be running to setup the necessary local development environment.
+> The deployment can be configured to your specific needs by modifying the parameters in the [./infra/core.bicepparam](./infra/core.bicepparam) file, or using defined system environment variables (see below). All parameters are optional, and if not provided, resources will be deployed using the naming conventions defined in the Azure Cloud Adoption Framework.
 
-```powershell
-.\Setup-Environment.ps1 -DeploymentName <DeploymentName> -Location <Location> -IsLocal
+<details>
+  <summary><strong>Environment Variables</strong></summary>
+
+| Environment Variable                           | Description                                                                                                        |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| AZURE_ENV_NAME                                 | Name of the Azure environment to deploy.                                                                           |
+| AZURE_LOCATION                                 | Azure region to deploy the resources, e.g. eastus.                                                                 |
+| AZURE_RESOURCE_GROUP_NAME                      | Name of the Azure Resource Group to deploy the resources, e.g. document-processing-rg.                             |
+| AZURE_PRINCIPAL_ID                             | The Azure Principal ID of an Entra ID user to assign RBAC roles to, e.g. 12345678-1234-1234-1234-123456789012.     |
+| AZURE_NETWORK_ISOLATION                        | Whether to deploy the resources in a private virtual network with private endpoints, e.g. true.                    |
+| CONTAINER_REGISTRY_REUSE                       | Whether to reuse an existing Container Registry, e.g. false.                                                       |
+| CONTAINER_REGISTRY_RESOURCE_GROUP_NAME         | Name of the Azure Resource Group for the Container Registry to reuse, e.g. container-registry-rg.                  |
+| CONTAINER_REGISTRY_NAME                        | Name of the Azure Container Registry, e.g. container-registry.                                                     |
+| LOG_ANALYTICS_WORKSPACE_REUSE                  | Whether to reuse an existing Log Analytics Workspace, e.g. false.                                                  |
+| LOG_ANALYTICS_WORKSPACE_RESOURCE_GROUP_NAME    | Name of the Azure Resource Group for the Log Analytics Workspace to reuse, e.g. log-analytics-rg.                  |
+| LOG_ANALYTICS_WORKSPACE_NAME                   | Name of the Azure Log Analytics Workspace, e.g. log-analytics-workspace.                                           |
+| APP_INSIGHTS_REUSE                             | Whether to reuse an existing Application Insights resource, e.g. false.                                            |
+| APP_INSIGHTS_RESOURCE_GROUP_NAME               | Name of the Azure Resource Group for the Application Insights resource to reuse, e.g. app-insights-rg.             |
+| APP_INSIGHTS_NAME                              | Name of the Azure Application Insights resource, e.g. app-insights.                                                |
+| AZURE_AI_SERVICES_REUSE                        | Whether to reuse an existing Azure AI Services resource, e.g. false.                                               |
+| AZURE_AI_SERVICES_RESOURCE_GROUP_NAME          | Name of the Azure Resource Group for the Azure AI Services resource to reuse, e.g. ai-services-rg.                 |
+| AZURE_AI_SERVICES_NAME                         | Name of the Azure AI Services resource, e.g. ai-services.                                                          |
+| AZURE_DB_REUSE                                 | Whether to reuse an existing Azure Cosmos DB account, e.g. false.                                                  |
+| AZURE_DB_RESOURCE_GROUP_NAME                   | Name of the Azure Resource Group for the Azure Cosmos DB account to reuse, e.g. cosmos-db-rg.                      |
+| AZURE_DB_ACCOUNT_NAME                          | Name of the Azure Cosmos DB account, e.g. cosmos-db.                                                               |
+| AZURE_DB_DATABASE_NAME                         | Name of the Azure Cosmos DB database to store data, e.g. documents.                                                |
+| AZURE_KEY_VAULT_REUSE                          | Whether to reuse an existing Azure Key Vault, e.g. false.                                                          |
+| AZURE_KEY_VAULT_RESOURCE_GROUP_NAME            | Name of the Azure Resource Group for the Azure Key Vault to reuse, e.g. key-vault-rg.                              |
+| AZURE_KEY_VAULT_NAME                           | Name of the Azure Key Vault, e.g. key-vault.                                                                       |
+| AZURE_STORAGE_ACCOUNT_REUSE                    | Whether to reuse an existing Azure Storage account, e.g. false.                                                    |
+| AZURE_STORAGE_ACCOUNT_RESOURCE_GROUP_NAME      | Name of the Azure Resource Group for the Azure Storage account to reuse, e.g. storage-account-rg.                  |
+| AZURE_STORAGE_ACCOUNT_NAME                     | Name of the Azure Storage account, e.g. storage-account.                                                           |
+| AZURE_STORAGE_CONTAINER_NAME                   | Name of the Azure Storage blob container, e.g. documents.                                                          |
+| AZURE_VNET_REUSE                               | Whether to reuse an existing Azure Virtual Network, e.g. false.                                                    |
+| AZURE_VNET_RESOURCE_GROUP_NAME                 | Name of the Azure Resource Group for the Azure Virtual Network to reuse, e.g. vnet-rg.                             |
+| AZURE_VNET_NAME                                | Name of the Azure Virtual Network, e.g. vnet.                                                                      |
+| APP_CONFIG_REUSE                               | Whether to reuse an existing Azure App Configuration resource, e.g. false.                                         |
+| APP_CONFIG_RESOURCE_GROUP_NAME                 | Name of the Azure Resource Group for the Azure App Configuration resource to reuse, e.g. app-config-rg.            |
+| APP_CONFIG_NAME                                | Name of the Azure App Configuration resource, e.g. app-config.                                                     |
+| CONTAINER_APPS_ENVIRONMENT_REUSE               | Whether to reuse an existing Azure Container Apps environment, e.g. false.                                         |
+| CONTAINER_APPS_ENVIRONMENT_RESOURCE_GROUP_NAME | Name of the Azure Resource Group for the Azure Container Apps environment to reuse, e.g. container-apps-rg.        |
+| CONTAINER_APPS_ENVIRONMENT_NAME                | Name of the Azure Container Apps environment, e.g. container-apps-env.                                             |
+| AI_HUB_REUSE                                   | Whether to reuse an existing Azure AI Foundry Hub, e.g. false.                                                     |
+| AI_HUB_RESOURCE_GROUP_NAME                     | Name of the Azure Resource Group for the Azure AI Foundry Hub to reuse, e.g. ai-hub-rg.                            |
+| AI_HUB_NAME                                    | Name of the Azure AI Foundry Hub, e.g. ai-hub.                                                                     |
+| AI_HUB_PROJECT_NAME                            | Name of the Azure AI Foundry Project, e.g. ai-project.                                                             |
+| AZURE_VPN_DEPLOY_VPN                           | Whether to deploy a VPN Gateway for accessing the Azure resources when using a private virtual network, e.g. true. |
+| AZURE_VPN_GATEWAY_NAME                         | Name of the Azure VPN Gateway, e.g. vpn-gateway.                                                                   |
+| AZURE_VPN_GATEWAY_PUBLIC_IP_NAME               | Name of the Azure VPN Gateway Public IP, e.g. vpn-gateway-ip.                                                      |
+| AZURE_VM_DEPLOY_VM                             | Whether to deploy a VM for accessing the Azure resources when using a private virtual network, e.g. true.          |
+| AZURE_VM_NAME                                  | Name of the Azure VM, e.g. vm.                                                                                     |
+| AZURE_VM_USER_NAME                             | Name of the Azure VM user, e.g. azureuser.                                                                         |
+| AZURE_VM_KV_SEC_NAME                           | Name of the Azure Key Vault secret for the VM password, e.g. vm-password.                                          |
+| AZURE_VNET_ADDRESS                             | Address space for the Azure Virtual Network, e.g. 10.0.0.0/23.                                                     |
+| AZURE_AI_NSG_NAME                              | Name of the Azure Network Security Group for the AI components, e.g. ai-nsg.                                       |
+| AZURE_AI_SUBNET_NAME                           | Name of the Azure Subnet for the AI components, e.g. ai-subnet.                                                    |
+| AZURE_AI_SUBNET_PREFIX                         | Address prefix for the Azure Subnet for the AI components, e.g. 10.0.0.0/26.                                       |
+| AZURE_ACA_NSG_NAME                             | Name of the Azure Network Security Group for the ACA components, e.g. aca-nsg.                                     |
+| AZURE_ACA_SUBNET_NAME                          | Name of the Azure Subnet for the ACA components, e.g. aca-subnet.                                                  |
+| AZURE_ACA_SUBNET_PREFIX                        | Address prefix for the Azure Subnet for the ACA components, e.g. 10.0.1.64/26.                                     |
+| AZURE_BASTION_NSG_NAME                         | Name of the Azure Network Security Group for the Bastion components, e.g. bastion-nsg.                             |
+| AZURE_BASTION_KV_NAME                          | Name of the Azure Key Vault for the Bastion components, e.g. bastion-kv.                                           |
+| AZURE_BASTION_SUBNET_PREFIX                    | Address prefix for the Azure Subnet for the Bastion components, e.g. 10.0.0.64/26.                                 |
+| AZURE_DATABASE_NSG_NAME                        | Name of the Azure Network Security Group for the Database components, e.g. database-nsg.                           |
+| AZURE_DATABASE_SUBNET_NAME                     | Name of the Azure Subnet for the Database components, e.g. database-subnet.                                        |
+| AZURE_DATABASE_SUBNET_PREFIX                   | Address prefix for the Azure Subnet for the Database components, e.g. 10.0.1.0/26.                                 |
+| AZURE_BLOB_STORAGE_ACCOUNT_PE                  | Name of the Azure Storage Account Blob Private Endpoint, e.g. blob-storage-pe.                                     |
+| AZURE_TABLE_STORAGE_ACCOUNT_PE                 | Name of the Azure Storage Account Table Private Endpoint, e.g. table-storage-pe.                                   |
+| AZURE_QUEUE_STORAGE_ACCOUNT_PE                 | Name of the Azure Storage Account Queue Private Endpoint, e.g. queue-storage-pe.                                   |
+| AZURE_FILE_STORAGE_ACCOUNT_PE                  | Name of the Azure Storage Account File Private Endpoint, e.g. file-storage-pe.                                     |
+| AZURE_COSMOS_DB_ACCOUNT_PE                     | Name of the Azure Cosmos DB Account Private Endpoint, e.g. cosmos-db-pe.                                           |
+| AZURE_KEY_VAULT_PE                             | Name of the Azure Key Vault Private Endpoint, e.g. key-vault-pe.                                                   |
+| AZURE_APP_CONFIG_PE                            | Name of the Azure App Configuration Private Endpoint, e.g. app-config-pe.                                          |
+| AZURE_MONITOR_PRIVATE_LINK_NAME                | Name of the Azure Monitor Private Link, e.g. monitor-private-link.                                                 |
+| AZURE_LOG_ANALYTICS_PE                         | Name of the Azure Log Analytics Private Endpoint, e.g. log-analytics-pe.                                           |
+| AZURE_AI_SERVICES_PE                           | Name of the Azure AI Services Private Endpoint, e.g. ai-services-pe.                                               |
+| AZURE_CONTAINER_REGISTRY_PE                    | Name of the Azure Container Registry Private Endpoint, e.g. container-registry-pe.                                 |
+| AZURE_CONTAINER_APPS_ENVIRONMENT_PE            | Name of the Azure Container Apps Environment Private Endpoint, e.g. container-apps-env-pe.                         |
+| AZURE_AI_HUB_PE                                | Name of the Azure AI Foundry Hub Private Endpoint, e.g. ai-hub-pe.                                                 |
+| AZURE_DEPLOY_APP_CONFIG_VALUES                 | Whether to deploy the Azure App Configuration values, e.g. true.                                                   |
+| AZURE_OPENAI_API_VERSION                       | The Azure OpenAI API version to use, e.g. 2025-01-01-preview.                                                      |
+
+</details>
+
+### Deploying to Azure
+
+To setup an environment in Azure, you can use the following `azd` commands:
+
+> [!IMPORTANT]
+> Review the parameters in the [./infra/core.bicepparam](./infra/core.bicepparam) file, or use the environment variables defined above to customize the deployment to your needs.
+
+```bash
+# Login to Azure with Azure Developer CLI (use --tenant-id for specific tenant)
+azd auth login
+
+# Build the containerized application and deploy to Azure
+azd up
 ```
 
-> [!NOTE]
-> The `-SkipInfrastructure` parameter can be used to skip the deployment of the core infrastructure components if they are already deployed. This will use the deployment outputs for the core Azure infrastructure components to configure the local development environment settings.
-> E.g. `.\Setup-Environment.ps1 -DeploymentName <DeploymentName> -Location <Location> -IsLocal -SkipInfrastructure`
+<details>
+  <summary><strong>Deploy using scripts</strong></summary>
 
-When configured for local development, you will be granted the following role-based access to your identity scoped to the specific Azure resources:
-
-- **Azure Resource Group**:
-  - **Role**: Contributor
-- **Azure Key Vault**:
-  - **Role**: Key Vault Secrets User
-- **Azure AI Services**:
-  - **Role**: Cognitive Services User
-  - **Role**: Cognitive Services OpenAI User
-- **Azure Storage Account**:
-  - **Role**: Storage Account Contributor
-  - **Role**: Storage Blob Data Contributor
-  - **Role**: Storage File Data Privileged Contributor
-  - **Role**: Storage Table Data Contributor
-  - **Role**: Storage Queue Data Contributor
-- **Azure Container Registry**:
-  - **Role**: AcrPull
-  - **Role**: AcrPush
-- **Azure AI Hub/Project**:
-  - **Role**: Azure ML Data Scientist
-
-With the local development environment setup, you can open the solution in Visual Studio Code using the Dev Container. The Dev Container contains all the necessary tools and dependencies to run the sample project with F5 debugging support.
-
-### Setup the complete Azure environment
-
-To setup an environment in Azure, simply run the [Setup-Environment.ps1](./Setup-Environment.ps1) script from the root of the project:
+Alternatively to using the `azd` commands, you can use the provided PowerShell or Bash scripts to deploy the infrastructure and application.
 
 ```powershell
 .\Setup-Environment.ps1 -DeploymentName <DeploymentName> -Location <Location>
 ```
 
+```bash
+bash ./setup_environment.sh <DeploymentName> <Location>
+```
+
+</details>
+
+#### Environment Network Isolation
+
+By default, the deployment will be configured to use public endpoints for all Azure resources, secured using Azure Managed Identity and Azure RBAC least privilege access with API key access disabled.
+
+To deploy the environment with network isolation using a virtual network and private endpoints, set the `AZURE_NETWORK_ISOLATION` environment variable to `true` or update the `core.bicepparam` file to set the `networkIsolation` parameter to `true`.
+
+This will deploy additional resources to the environment, including:
+
+- **Virtual Network (VNet)**:
+  - Created if `networkIsolation` is `true` (unless reusing an existing VNet).
+  - Address space configurable (default: `10.0.0.0/23`).
+- **Subnets within the VNet**:
+  - AI Services subnet, with private endpoints for:
+    - Key Vault
+    - App Configuration
+    - Storage
+    - Cosmos DB
+    - AI Foundry
+    - AI Services
+    - Container Registry
+    - Container Apps Environment
+  - Azure Container Apps Environment subnet, with delegation for `Microsoft.App/environments`.
+  - Bastion subnet, for the Bastion host VM.
+- **VPN Gateway** (optional):
+  - Deployed if `deployVPN` is `true` and `networkIsolation` is enabled.
+- **Bastion Host VM** (optional):
+  - Deployed if `deployVM` is `true` and `networkIsolation` is enabled.
+  - Includes Microsoft Entra ID authentication extension.
+
+### Running the application locally
+
+For local development and testing in the devcontainer, you can run the application locally with `F5` debugging in Visual Studio Code.
+
 > [!NOTE]
-> The `-SkipInfrastructure` parameter can be used to skip the deployment of the core infrastructure components if they are already deployed. This will skip the core infrastructure deployment and only deploy the application to the Azure Container Apps environment.
-> E.g. `.\Setup-Environment.ps1 -DeploymentName <DeploymentName> -Location <Location> -SkipInfrastructure`
+> If you require local Azure Storage emulation, you can run `docker-compose up` to start a local Azurite instance.
 
-When deployed to Azure, the application is assigned a user-assigned managed identity to securely access the Azure resources used in the pipeline. The managed identity is assigned the following role-based access to your identity scoped to the specific Azure resources:
+### Testing the pre-built pipeline
 
-- **Azure Container Registry**:
-  - **Role**: AcrPull
-- **Azure Storage Account**:
-  - **Role**: Storage Account Contributor
-  - **Role**: Storage Blob Data Contributor
-  - **Role**: Storage File Data Privileged Contributor
-  - **Role**: Storage Table Data Contributor
-  - **Role**: Storage Queue Data Contributor
-- **Azure AI Services**
-  - **Role**: Cognitive Services User
-  - **Role**: Cognitive Services OpenAI User
-
-### Testing the document processing pipeline
-
-Once an environment is setup, you can run the document processing pipeline by uploading a batch of documents to the Azure Storage blob container and sending a message via a HTTP request or Azure Storage queue containing the container reference.
+Once an environment is setup, you can run the pre-built pipeline by uploading a batch of documents to the Azure Storage blob container and sending a message via a HTTP request or Azure Storage queue containing the container reference.
 
 A batch of invoices is provided in the tests [Invoice Batch folder](./tests/InvoiceBatch/) which can be uploaded into an Azure Storage blob container, locally via Azurite, or in the deployed Azure Storage account.
 
@@ -333,21 +445,21 @@ POST http://localhost:7071/api/process-documents
 Content-Type: application/json
 
 {
-    "container_name": "invoices"
+    "container_name": "documents"
 }
 ```
 
-To run in Azure, replace `http://localhost:7071` with the `appInfo.value.url` value from the [`./infra/apps/AIDocumentPipeline/AppOutputs.json`](./infra/apps/AIDocumentPipeline/AppOutputs.json) file after deployment.
+To run in Azure, replace `http://localhost:7071` with the `environmentInfo.value.applicationContainerAppUrl` value from the [`./infra/scripts/InfrastructureOutputs.json`](./infra/scripts/InfrastructureOutputs.json) file after deployment.
 
 #### Via the Azure Storage queue
 
 To send via the Azure Storage queue, run the [`tests/QueueTrigger.ps1`](./tests/QueueTrigger.ps1) PowerShell script to trigger the pipeline.
 
-This will add the following message to the **invoices** queue in the Azure Storage account, Base64 encoded:
+This will add the following message to the **documents** queue in the Azure Storage account, Base64 encoded:
 
 ```json
 {
-  "container_name": "invoices"
+  "container_name": "documents"
 }
 ```
 
@@ -356,7 +468,7 @@ To run in Azure, replace the `az storage message put` command with the following
 ```powershell
 az storage message put `
     --content $Base64EncodedMessage `
-    --queue-name "invoices" `
+    --queue-name "documents" `
     --account-name "<storage-account-name>" `
     --auth-mode login `
     --time-to-live 86400
@@ -380,6 +492,13 @@ For Azure AI Document Intelligence, confidence scores are automatically calculat
 
 > [!NOTE]
 > See the [`document_intelligence_confidence`](./src/AIDocumentPipeline/shared/confidence/document_intelligence_confidence.py) module for the implementation of calculating the confidence score for the Azure AI Document Intelligence model using a structured output.
+
+### I deployed with network isolation, how can I access the resources?
+
+When deploying with network isolation, you can access the Azure resources using either the deployed VPN Gateway or Bastion host. The VPN Gateway allows you to connect to the Azure resources using a VPN client, while the Bastion host allows you to connect to a jumpbox VM in the Azure environment using the Azure portal.
+
+> [!NOTE]
+> If you are using the jumpbox VM, you can use the [./infra/scripts/Initialize-VM.ps1](./infra/scripts/Initialize-VM.ps1) script to install the necessary tools and dependencies on the VM to build and deploy the application.
 
 ## Contributing
 

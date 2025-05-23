@@ -1,20 +1,91 @@
-import { vnetConfigInfo } from './vnet-config.bicep'
-
 @description('Name of the resource.')
 param name string
 @description('Location to deploy the resource. Defaults to the location of the resource group.')
 param location string = resourceGroup().location
 @description('Tags for the resource.')
 param tags object = {}
-@description('MSI Id.')
-param identityId string?
 
-@description('Whether to enable public network access. Defaults to Enabled.')
-@allowed([
-  'Enabled'
-  'Disabled'
-])
-param publicNetworkAccess string = 'Enabled'
+@description('ID for the Managed Identity associated with the Container Apps Environment. Defaults to the system-assigned identity.')
+param identityId string?
+@description('Additional workload profiles. Includes Consumption by default.')
+param workloadProfiles workloadProfileInfo[] = []
+@description('Name of the Log Analytics Workspace to store application logs.')
+param logAnalyticsWorkspaceName string
+@description('Name of the Application Insights resource.')
+param applicationInsightsName string
+@description('Custom domain configuration for the environment.')
+param customDomainConfig customDomainConfigInfo = {
+  dnsSuffix: ''
+  certificateValue: ''
+  certificatePassword: ''
+}
+@description('Virtual network configuration for the environment.')
+param vnetConfig vnetConfigInfo = {
+  infrastructureSubnetId: ''
+  internal: true
+}
+@description('Value indicating whether the environment is zone-redundant. Defaults to false.')
+param zoneRedundant bool = false
+
+// Deployments
+
+resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2025-02-01' existing = {
+  name: logAnalyticsWorkspaceName
+}
+
+resource applicationInsights 'Microsoft.Insights/components@2020-02-02' existing = {
+  name: applicationInsightsName
+}
+
+resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2025-01-01' = {
+  name: name
+  location: location
+  tags: tags
+  identity: {
+    type: identityId == null ? 'SystemAssigned' : 'UserAssigned'
+    userAssignedIdentities: identityId == null
+      ? null
+      : {
+          '${identityId}': {}
+        }
+  }
+  properties: {
+    appLogsConfiguration: {
+      destination: 'log-analytics'
+      logAnalyticsConfiguration: {
+        customerId: logAnalyticsWorkspace.properties.customerId
+        sharedKey: logAnalyticsWorkspace.listKeys().primarySharedKey
+      }
+    }
+    workloadProfiles: concat(
+      [
+        {
+          name: 'Consumption'
+          workloadProfileType: 'Consumption'
+        }
+      ],
+      workloadProfiles
+    )
+    customDomainConfiguration: !empty(customDomainConfig.dnsSuffix) ? customDomainConfig : {}
+    vnetConfiguration: !empty(vnetConfig.infrastructureSubnetId) ? vnetConfig : {}
+    zoneRedundant: zoneRedundant
+    daprAIConnectionString: applicationInsights.properties.ConnectionString
+    daprAIInstrumentationKey: applicationInsights.properties.InstrumentationKey
+  }
+}
+
+// Outputs
+
+@description('ID for the deployed Container Apps Environment resource.')
+output id string = containerAppsEnvironment.id
+@description('Name for the deployed Container Apps Environment resource.')
+output name string = containerAppsEnvironment.name
+@description('Default domain for the deployed Container Apps Environment resource.')
+output defaultDomain string = containerAppsEnvironment.properties.defaultDomain
+@description('Static IP for the deployed Container Apps Environment resource.')
+output staticIp string = containerAppsEnvironment.properties.staticIp
+
+// Definitions
 
 @export()
 @description('Information about a workload profile for the environment.')
@@ -51,80 +122,11 @@ type customDomainConfigInfo = {
   certificatePassword: string
 }
 
-@description('Additional workload profiles. Includes Consumption by default.')
-param workloadProfiles workloadProfileInfo[] = []
-@description('Name of the Log Analytics Workspace to store application logs.')
-param logAnalyticsWorkspaceName string
-@description('Name of the Application Insights resource.')
-param applicationInsightsName string
-@description('Custom domain configuration for the environment.')
-param customDomainConfig customDomainConfigInfo = {
-  dnsSuffix: ''
-  certificateValue: ''
-  certificatePassword: ''
+@export()
+@description('Information about the configuration for a virtual network in the environment.')
+type vnetConfigInfo = {
+  @description('Resource ID of a subnet for infrastructure components.')
+  infrastructureSubnetId: string
+  @description('Value indicating whether the environment only has an internal load balancer.')
+  internal: bool
 }
-@description('Virtual network configuration for the environment.')
-param vnetConfig vnetConfigInfo = {
-  infrastructureSubnetId: ''
-  internal: true
-}
-@description('Value indicating whether the environment is zone-redundant. Defaults to false.')
-param zoneRedundant bool = false
-
-resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = {
-  name: logAnalyticsWorkspaceName
-}
-
-resource applicationInsights 'Microsoft.Insights/components@2020-02-02' existing = {
-  name: applicationInsightsName
-}
-
-resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-10-02-preview' = {
-  name: name
-  location: location
-  tags: tags
-  identity: {
-    type: identityId == null ? 'SystemAssigned' : 'UserAssigned'
-    userAssignedIdentities: identityId == null
-      ? null
-      : {
-          '${identityId}': {}
-        }
-  }
-  properties: {
-    publicNetworkAccess: !empty(vnetConfig.infrastructureSubnetId) ? 'Disabled' : 'Enabled'
-    appLogsConfiguration: {
-      destination: 'log-analytics'
-      logAnalyticsConfiguration: {
-        customerId: logAnalyticsWorkspace.properties.customerId
-        sharedKey: logAnalyticsWorkspace.listKeys().primarySharedKey
-      }
-    }
-    workloadProfiles: concat(
-      [
-        {
-          name: 'Consumption'
-          workloadProfileType: 'Consumption'
-        }
-      ],
-      workloadProfiles
-    )
-    customDomainConfiguration: !empty(customDomainConfig.dnsSuffix) ? customDomainConfig : {}
-    vnetConfiguration: !empty(vnetConfig.infrastructureSubnetId) ? vnetConfig : {}
-    zoneRedundant: zoneRedundant
-    daprAIConnectionString: applicationInsights.properties.ConnectionString
-    daprAIInstrumentationKey: applicationInsights.properties.InstrumentationKey
-  }
-}
-
-@description('ID for the deployed Container Apps Environment resource.')
-output id string = containerAppsEnvironment.id
-@description('Name for the deployed Container Apps Environment resource.')
-output name string = containerAppsEnvironment.name
-@description('Default domain for the deployed Container Apps Environment resource.')
-output defaultDomain string = containerAppsEnvironment.properties.defaultDomain
-@description('Static IP for the deployed Container Apps Environment resource.')
-output staticIp string = containerAppsEnvironment.properties.staticIp
-
-@description('Static IP for the deployed Container Apps Environment resource.')
-output properties object = containerAppsEnvironment.properties

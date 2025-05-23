@@ -7,6 +7,8 @@ param keyVaultName string
 @secure()
 param value string
 
+// Deployments
+
 resource keyVault 'Microsoft.KeyVault/vaults@2024-12-01-preview' existing = {
   name: keyVaultName
 
@@ -20,6 +22,8 @@ resource keyVault 'Microsoft.KeyVault/vaults@2024-12-01-preview' existing = {
     }
   }
 }
+
+// Outputs
 
 @description('ID for the deployed Key Vault Secret resource.')
 output id string = keyVault::keyVaultSecret.id

@@ -8,112 +8,8 @@ param location string = resourceGroup().location
 @description('Tags for the resource.')
 param tags object = {}
 
-param aiServicesDeploy bool = true
-param aiServicesReuse bool
-param existingAiServicesResourceGroupName string
-
-@export()
-@description('Information about a Responsible AI policy for AI Services.')
-type raiPolicyInfo = {
-  @description('Name for the Responsible AI policy. Must be unique within AI Services.')
-  name: string
-  @description('Mode for the Responsible AI policy.')
-  mode: 'Blocking' | 'Default' | 'Deferred'
-  prompt: {
-    violence: {
-      SeverityThreshold: 'Low' | 'Medium' | 'High'
-      blocking: bool
-      enabled: bool
-    }?
-    hate: {
-      SeverityThreshold: 'Low' | 'Medium' | 'High'
-      blocking: bool
-      enabled: bool
-    }?
-    sexual: {
-      SeverityThreshold: 'Low' | 'Medium' | 'High'
-      blocking: bool
-      enabled: bool
-    }?
-    selfharm: {
-      SeverityThreshold: 'Low' | 'Medium' | 'High'
-      blocking: bool
-      enabled: bool
-    }?
-    jailbreak: {
-      blocking: bool
-      enabled: bool
-    }?
-    indirect_attack: {
-      blocking: bool
-      enabled: bool
-    }?
-  }?
-  completion: {
-    violence: {
-      SeverityThreshold: 'Low' | 'Medium' | 'High'
-      blocking: bool
-      enabled: bool
-    }?
-    hate: {
-      SeverityThreshold: 'Low' | 'Medium' | 'High'
-      blocking: bool
-      enabled: bool
-    }?
-    sexual: {
-      SeverityThreshold: 'Low' | 'Medium' | 'High'
-      blocking: bool
-      enabled: bool
-    }?
-    selfharm: {
-      SeverityThreshold: 'Low' | 'Medium' | 'High'
-      blocking: bool
-      enabled: bool
-    }?
-    protected_material_text: {
-      blocking: bool
-      enabled: bool
-    }?
-    protected_material_code: {
-      blocking: bool
-      enabled: bool
-    }?
-  }?
-}
-
-@export()
-@description('Information about a model deployment for AI Services.')
-type modelDeploymentInfo = {
-  @description('Name for the model deployment. Must be unique within AI Services.')
-  name: string
-  @description('Information about the model to deploy.')
-  model: {
-    @description('Format of the model. Expects "OpenAI".')
-    format: string
-    @description('ID of the model, e.g., gpt-35-turbo. For more information on model IDs: https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models')
-    name: string
-    @description('Version of the model, e.g., 0125. For more information on model versions: https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models')
-    version: string
-  }?
-  @description('Name of the content filter policy to apply to the model deployment.')
-  raiPolicyName: string?
-  @description('Sizing for the model deployment.')
-  sku: {
-    @description('Name of the SKU. Expects "Standard".')
-    name: string
-    @description('TPM quota allocation for the model deployment. For more information on model quota limits per region: https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models')
-    capacity: int
-  }?
-  @description('Option for upgrading the model deployment version.')
-  versionUpgradeOption: 'NoAutoUpgrade' | 'OnceCurrentVersionExpired' | 'OnceNewDefaultVersionAvailable'
-}
-
 @description('ID for the Managed Identity associated with the AI Services instance. Defaults to the system-assigned identity.')
 param identityId string?
-@description('ID for the Managed Identity associated with the AI Services instance. Defaults to the system-assigned identity.')
-param identityPrincipalId string?
-@description('ID for the Managed Identity associated with the AI Services instance. Defaults to the system-assigned identity.')
-param identityClientId string?
 @description('List of model deployments.')
 param deployments modelDeploymentInfo[] = []
 @description('Whether to enable public network access. Defaults to Enabled.')
@@ -146,12 +42,9 @@ param diagnosticSettings diagnosticSettingsInfo = {
   ]
 }
 
-resource existingAccount 'Microsoft.CognitiveServices/accounts@2024-10-01' existing  = if (aiServicesReuse && aiServicesDeploy) {
-  scope: resourceGroup(existingAiServicesResourceGroupName)
-  name: name
-}
+// Deployments
 
-resource aiServices 'Microsoft.CognitiveServices/accounts@2024-10-01' = if (!aiServicesReuse && aiServicesDeploy) {
+resource aiServices 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' = {
   name: name
   location: location
   tags: tags
@@ -161,21 +54,13 @@ resource aiServices 'Microsoft.CognitiveServices/accounts@2024-10-01' = if (!aiS
     userAssignedIdentities: identityId == null
       ? null
       : {
-          '${identityId}': {
-            //principalId: identityPrincipalId
-            //clientId: identityClientId
-          }
+          '${identityId}': {}
         }
   }
   properties: {
     customSubDomainName: toLower(name)
     disableLocalAuth: disableLocalAuth
     publicNetworkAccess: publicNetworkAccess
-    networkAcls: {
-      defaultAction: 'Allow'
-      ipRules: []
-      virtualNetworkRules: []
-    }
   }
   sku: {
     name: 'S0'
@@ -183,7 +68,7 @@ resource aiServices 'Microsoft.CognitiveServices/accounts@2024-10-01' = if (!aiS
 }
 
 @batchSize(1)
-resource raiPolicy 'Microsoft.CognitiveServices/accounts/raiPolicies@2024-10-01' = [
+resource raiPolicy 'Microsoft.CognitiveServices/accounts/raiPolicies@2025-04-01-preview' = [
   for raiPolicy in raiPolicies: {
     parent: aiServices
     name: raiPolicy.name
@@ -193,56 +78,56 @@ resource raiPolicy 'Microsoft.CognitiveServices/accounts/raiPolicies@2024-10-01'
       contentFilters: [
         {
           name: 'violence'
-          SeverityThreshold: raiPolicy.?prompt.?violence.?SeverityThreshold ?? 'High'
+          severityThreshold: raiPolicy.?prompt.?violence.?severityThreshold ?? 'High'
           blocking: raiPolicy.?prompt.?violence.?blocking ?? true
           enabled: raiPolicy.?prompt.?violence.?enabled ?? true
           source: 'Prompt'
         }
         {
           name: 'violence'
-          SeverityThreshold: raiPolicy.?completion.?violence.?SeverityThreshold ?? 'High'
+          severityThreshold: raiPolicy.?completion.?violence.?severityThreshold ?? 'High'
           blocking: raiPolicy.?completion.?violence.?blocking ?? true
           enabled: raiPolicy.?completion.?violence.?enabled ?? true
           source: 'Completion'
         }
         {
           name: 'hate'
-          SeverityThreshold: raiPolicy.?prompt.?hate.?SeverityThreshold ?? 'High'
+          severityThreshold: raiPolicy.?prompt.?hate.?severityThreshold ?? 'High'
           blocking: raiPolicy.?prompt.?hate.?blocking ?? true
           enabled: raiPolicy.?prompt.?hate.?enabled ?? true
           source: 'Prompt'
         }
         {
           name: 'hate'
-          SeverityThreshold: raiPolicy.?completion.?hate.?SeverityThreshold ?? 'High'
+          severityThreshold: raiPolicy.?completion.?hate.?severityThreshold ?? 'High'
           blocking: raiPolicy.?completion.?hate.?blocking ?? true
           enabled: raiPolicy.?completion.?hate.?enabled ?? true
           source: 'Completion'
         }
         {
           name: 'sexual'
-          SeverityThreshold: raiPolicy.?prompt.?sexual.?SeverityThreshold ?? 'High'
+          severityThreshold: raiPolicy.?prompt.?sexual.?severityThreshold ?? 'High'
           blocking: raiPolicy.?prompt.?sexual.?blocking ?? true
           enabled: raiPolicy.?prompt.?sexual.?enabled ?? true
           source: 'Prompt'
         }
         {
           name: 'sexual'
-          SeverityThreshold: raiPolicy.?completion.?sexual.?SeverityThreshold ?? 'High'
+          severityThreshold: raiPolicy.?completion.?sexual.?severityThreshold ?? 'High'
           blocking: raiPolicy.?completion.?sexual.?blocking ?? true
           enabled: raiPolicy.?completion.?sexual.?enabled ?? true
           source: 'Completion'
         }
         {
           name: 'selfharm'
-          SeverityThreshold: raiPolicy.?prompt.?selfharm.?SeverityThreshold ?? 'High'
+          severityThreshold: raiPolicy.?prompt.?selfharm.?severityThreshold ?? 'High'
           blocking: raiPolicy.?prompt.?selfharm.?blocking ?? true
           enabled: raiPolicy.?prompt.?selfharm.?enabled ?? true
           source: 'Prompt'
         }
         {
           name: 'selfharm'
-          SeverityThreshold: raiPolicy.?completion.?selfharm.?SeverityThreshold ?? 'High'
+          severityThreshold: raiPolicy.?completion.?selfharm.?severityThreshold ?? 'High'
           blocking: raiPolicy.?completion.?selfharm.?blocking ?? true
           enabled: raiPolicy.?completion.?selfharm.?enabled ?? true
           source: 'Completion'
@@ -277,7 +162,7 @@ resource raiPolicy 'Microsoft.CognitiveServices/accounts/raiPolicies@2024-10-01'
 ]
 
 @batchSize(1)
-resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = [
+resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2025-04-01-preview' = [
   for deployment in deployments: {
     parent: aiServices
     name: deployment.name
@@ -308,7 +193,7 @@ resource assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [
   }
 ]
 
-resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = if (logAnalyticsWorkspaceName != null) {
+resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2025-02-01' existing = if (logAnalyticsWorkspaceName != null) {
   name: logAnalyticsWorkspaceName!
 }
 
@@ -322,17 +207,117 @@ resource aiServicesDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@202
   }
 }
 
+// Outputs
+
 @description('ID for the deployed AI Services resource.')
-output id string = aiServicesReuse ? existingAccount.id: aiServices.id
+output id string = aiServices.id
 @description('Name for the deployed AI Services resource.')
-output name string = aiServicesReuse ? existingAccount.name: aiServices.name
+output name string = aiServices.name
 @description('Endpoint for the deployed AI Services resource.')
-output endpoint string = aiServicesReuse ? existingAccount.properties.endpoint: aiServices.properties.endpoint
+output endpoint string = aiServices.properties.endpoint
 @description('Host for the deployed AI Services resource.')
-output host string = aiServicesReuse ? split(existingAccount.properties.endpoint, '/')[2] : split(aiServices.properties.endpoint, '/')[2]
+output host string = split(aiServices.properties.endpoint, '/')[2]
 @description('Endpoint for the Azure OpenAI API.')
-output openAIEndpoint string = aiServicesReuse ? existingAccount.properties.endpoints['OpenAI Language Model Instance API'] : aiServices.properties.endpoints['OpenAI Language Model Instance API']
+output openAIEndpoint string = aiServices.properties.endpoints['OpenAI Language Model Instance API']
 @description('Host for the Azure OpenAI API.')
-output openAIHost string = aiServicesReuse ? split(existingAccount.properties.endpoints['OpenAI Language Model Instance API'], '/')[2] : split(aiServices.properties.endpoints['OpenAI Language Model Instance API'], '/')[2]
+output openAIHost string = split(aiServices.properties.endpoints['OpenAI Language Model Instance API'], '/')[2]
 @description('Principal ID for the deployed AI Services resource.')
-output principalId string = identityPrincipalId == null ? aiServices.identity.principalId : identityPrincipalId!
+output identityPrincipalId string = identityId == null ? aiServices.identity.principalId : identityId!
+
+// Definitions
+
+@export()
+@description('Information about a Responsible AI policy for AI Services.')
+type raiPolicyInfo = {
+  @description('Name for the Responsible AI policy. Must be unique within AI Services.')
+  name: string
+  @description('Mode for the Responsible AI policy.')
+  mode: 'Blocking' | 'Default' | 'Deferred'
+  prompt: {
+    violence: {
+      severityThreshold: 'Low' | 'Medium' | 'High'
+      blocking: bool
+      enabled: bool
+    }?
+    hate: {
+      severityThreshold: 'Low' | 'Medium' | 'High'
+      blocking: bool
+      enabled: bool
+    }?
+    sexual: {
+      severityThreshold: 'Low' | 'Medium' | 'High'
+      blocking: bool
+      enabled: bool
+    }?
+    selfharm: {
+      severityThreshold: 'Low' | 'Medium' | 'High'
+      blocking: bool
+      enabled: bool
+    }?
+    jailbreak: {
+      blocking: bool
+      enabled: bool
+    }?
+    indirect_attack: {
+      blocking: bool
+      enabled: bool
+    }?
+  }?
+  completion: {
+    violence: {
+      severityThreshold: 'Low' | 'Medium' | 'High'
+      blocking: bool
+      enabled: bool
+    }?
+    hate: {
+      severityThreshold: 'Low' | 'Medium' | 'High'
+      blocking: bool
+      enabled: bool
+    }?
+    sexual: {
+      severityThreshold: 'Low' | 'Medium' | 'High'
+      blocking: bool
+      enabled: bool
+    }?
+    selfharm: {
+      severityThreshold: 'Low' | 'Medium' | 'High'
+      blocking: bool
+      enabled: bool
+    }?
+    protected_material_text: {
+      blocking: bool
+      enabled: bool
+    }?
+    protected_material_code: {
+      blocking: bool
+      enabled: bool
+    }?
+  }?
+}
+
+@export()
+@description('Information about a model deployment for AI Services.')
+type modelDeploymentInfo = {
+  @description('Name for the model deployment. Must be unique within AI Services.')
+  name: string
+  @description('Information about the model to deploy.')
+  model: {
+    @description('Format of the model. Expects "OpenAI".')
+    format: string
+    @description('ID of the model, e.g., gpt-4o. For more information on model IDs: https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models')
+    name: string
+    @description('Version of the model, e.g., 2024-11-20. For more information on model versions: https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models')
+    version: string
+  }?
+  @description('Name of the content filter policy to apply to the model deployment.')
+  raiPolicyName: string?
+  @description('Sizing for the model deployment.')
+  sku: {
+    @description('Name of the SKU. Expects "Standard".')
+    name: string
+    @description('TPM quota allocation for the model deployment. For more information on model quota limits per region: https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models')
+    capacity: int
+  }?
+  @description('Option for upgrading the model deployment version.')
+  versionUpgradeOption: 'NoAutoUpgrade' | 'OnceCurrentVersionExpired' | 'OnceNewDefaultVersionAvailable'
+}

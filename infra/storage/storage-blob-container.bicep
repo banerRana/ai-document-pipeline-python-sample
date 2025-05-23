@@ -11,6 +11,8 @@ param storageAccountName string
 ])
 param publicAccess string = 'None'
 
+// Deployments
+
 resource container 'Microsoft.Storage/storageAccounts/blobServices/containers@2024-01-01' = {
   name: '${storageAccountName}/default/${name}'
   properties: {
@@ -18,6 +20,8 @@ resource container 'Microsoft.Storage/storageAccounts/blobServices/containers@20
     metadata: {}
   }
 }
+
+// Outputs
 
 @description('ID for the deployed Storage blob container resource.')
 output id string = container.id

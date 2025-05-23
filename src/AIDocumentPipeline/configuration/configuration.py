@@ -8,6 +8,7 @@ from azure.appconfiguration.provider import (
 
 from tenacity import retry, wait_random_exponential, stop_after_attempt, RetryError
 
+
 class Configuration:
 
     credential = None
@@ -28,20 +29,21 @@ class Configuration:
             exclude_shared_token_cache_credential=True,
             exclude_developer_cli_credential=True,
             exclude_interactive_browser_credential=True
-            )
+        )
 
         try:
             app_config_uri = os.environ['APP_CONFIGURATION_URI']
-            self.config = load(endpoint=app_config_uri, credential=self.credential,key_vault_options=AzureAppConfigurationKeyVaultOptions(credential=self.credential))
+            self.config = load(endpoint=app_config_uri,
+                               credential=self.credential,
+                               key_vault_options=AzureAppConfigurationKeyVaultOptions(credential=self.credential))
         except Exception as e:
             try:
                 connection_string = os.environ["AZURE_APPCONFIG_CONNECTION_STRING"]
-                # Connect to Azure App Configuration using a connection string.
-                self.config = load(connection_string=connection_string, key_vault_options=AzureAppConfigurationKeyVaultOptions(credential=self.credential))
+                self.config = load(connection_string=connection_string,
+                                   key_vault_options=AzureAppConfigurationKeyVaultOptions(credential=self.credential))
             except Exception as e:
-                raise Exception(f"Unable to connect to Azure App Configuration. Please check your connection string or endpoint. {e}")
-
-    # Connect to Azure App Configuration.
+                logging.warning(
+                    "Unable to load Azure App Configuration. Please check your connection string or endpoint.")
 
     def get_value(self, key: str, default: str = None) -> str:
 
@@ -51,10 +53,10 @@ class Configuration:
         value = None
 
         allow_env_vars = False
-        if "allow_environment_variables" in os.environ:
+        if "ALLOW_ENVIRONMENT_VARIABLES" in os.environ:
             allow_env_vars = bool(os.environ[
-                    "allow_environment_variables"
-                    ])
+                "ALLOW_ENVIRONMENT_VARIABLES"
+            ])
 
         if allow_env_vars is True:
             value = os.environ.get(key)
@@ -68,10 +70,7 @@ class Configuration:
         if value is not None:
             return value
         else:
-            if default is not None:
-                return default
-
-            raise Exception(f'The configuration variable {key} not found.')
+            return default
 
     def retry_before_sleep(self, retry_state):
         # Log the outcome of each retry attempt.
