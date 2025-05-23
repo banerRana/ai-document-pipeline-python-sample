@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
 
-name: azure-ai-document-pipeline-python-sample
+name: azure-ai-document-pipeline-python
 metadata:
     template: azd-init@1.13.2
 resourceGroup: ${AZURE_RESOURCE_GROUP_NAME}
@@ -15,7 +15,7 @@ hooks:
   preprovision:
     posix:
       shell: sh
-      run: bash ./infra/scripts/deploy_infrastructure.sh $env:AZURE_ENV_NAME $env:AZURE_LOCATION
+      run: bash ./infra/scripts/deploy_infrastructure.sh $AZURE_ENV_NAME $AZURE_LOCATION
     windows:
       shell: pwsh
       run: infra/scripts/Deploy-Infrastructure.ps1 -DeploymentName $env:AZURE_ENV_NAME -Location $env:AZURE_LOCATION
