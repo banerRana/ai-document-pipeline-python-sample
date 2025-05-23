@@ -15,6 +15,8 @@ param subnetId string
 param bastionPublicIpName string
 @description('Subnet bound to the bastion host.')
 param bastionSubId string
+@description('Computer name for the virtual machine.')
+param vmComputerName string = 'aidocvm'
 @description('Username for the virtual machine user.')
 param vmUserName string
 @description('Password for the virtual machine user.')
@@ -154,7 +156,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2024-11-01' = {
       }
     }
     osProfile: {
-      computerName: 'gptragvm'
+      computerName: vmComputerName
       adminUsername: vmUserName
       adminPassword: vmUserPassword
       linuxConfiguration: ((authenticationType == 'password') ? null : linuxConfiguration)

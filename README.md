@@ -326,7 +326,7 @@ The deployment is split into two parts, run by separate scripts using the [Azure
 | AZURE_VM_NAME                                  | Name of the Azure VM, e.g. vm.                                                                                     |
 | AZURE_VM_USER_NAME                             | Name of the Azure VM user, e.g. azureuser.                                                                         |
 | AZURE_VM_KV_SEC_NAME                           | Name of the Azure Key Vault secret for the VM password, e.g. vm-password.                                          |
-| AZURE_VNET_ADDRESS SPACE                       | Address space for the Azure Virtual Network, e.g. 10.0.0.0/23.                                                     |
+| AZURE_VNET_ADDRESS                             | Address space for the Azure Virtual Network, e.g. 10.0.0.0/23.                                                     |
 | AZURE_AI_NSG_NAME                              | Name of the Azure Network Security Group for the AI components, e.g. ai-nsg.                                       |
 | AZURE_AI_SUBNET_NAME                           | Name of the Azure Subnet for the AI components, e.g. ai-subnet.                                                    |
 | AZURE_AI_SUBNET_PREFIX                         | Address prefix for the Azure Subnet for the AI components, e.g. 10.0.0.0/26.                                       |

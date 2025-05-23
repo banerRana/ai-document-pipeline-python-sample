@@ -84,7 +84,7 @@ param vmName = readEnvironmentVariable('AZURE_VM_NAME', '')
 
 param vmUserName = readEnvironmentVariable('AZURE_VM_USER_NAME', '')
 
-param vmUserInitialPassword = '${uniqueString(principalId, workloadName, 'password')}@123'
+param vmUserInitialPassword = '${uniqueString(workloadName, location, applicationName)}@1337'
 
 param vmUserPasswordKeyVaultSecretName = readEnvironmentVariable('AZURE_VM_KV_SEC_NAME', 'vmUserInitialPassword')
 
