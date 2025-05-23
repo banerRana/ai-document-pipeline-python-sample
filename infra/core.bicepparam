@@ -3,7 +3,7 @@ extends './root.bicepparam'
 
 param environmentName = readEnvironmentVariable('AZURE_ENV_NAME', '')
 
-param workloadName = 'ai-document-pipeline-zta'
+param workloadName = 'ai-document-pipeline'
 
 param location = readEnvironmentVariable('AZURE_LOCATION', 'eastus')
 
@@ -70,7 +70,7 @@ param identities = [
   }
 ]
 
-param networkIsolation = bool(readEnvironmentVariable('AZURE_NETWORK_ISOLATION', 'true'))
+param networkIsolation = bool(readEnvironmentVariable('AZURE_NETWORK_ISOLATION', 'false'))
 
 param deployVPN = bool(readEnvironmentVariable('AZURE_VPN_DEPLOY_VPN', 'false'))
 

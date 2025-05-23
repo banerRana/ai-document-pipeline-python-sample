@@ -843,7 +843,7 @@ var appSettings = [
   }
   {
     name: 'AZURE_RESOURCE_GROUP_NAME'
-    value: _resourceGroupName
+    value: resourceGroup.name
   }
   {
     name: 'LOGLEVEL'
@@ -1292,7 +1292,7 @@ resource keyVaultSecretsUserRole 'Microsoft.Authorization/roleDefinitions@2022-0
 module keyVault './security/key-vault.bicep' = {
   name: _keyVaultName
   scope: az.resourceGroup(resourceGroupScope(
-    _resourceGroupName,
+    resourceGroup.name,
     _azureReuseConfig.keyVaultReuse,
     _azureReuseConfig.existingKeyVaultResourceGroupName
   ))
@@ -1335,7 +1335,7 @@ resource appConfigDataOwnerRole 'Microsoft.Authorization/roleDefinitions@2022-05
 module appConfig './developer_tools/app-configuration-store.bicep' = {
   name: _appConfigName
   scope: az.resourceGroup(resourceGroupScope(
-    _resourceGroupName,
+    resourceGroup.name,
     _azureReuseConfig.appConfigReuse,
     _azureReuseConfig.existingAppConfigResourceGroupName
   ))
@@ -1373,7 +1373,7 @@ module appConfigPrivateEndpoint './networking/private-endpoint.bicep' = if (netw
 module logAnalyticsWorkspace './management_governance/log-analytics-workspace.bicep' = {
   name: _logAnalyticsWorkspaceName
   scope: az.resourceGroup(resourceGroupScope(
-    _resourceGroupName,
+    resourceGroup.name,
     _azureReuseConfig.logAnalyticsWorkspaceReuse,
     _azureReuseConfig.existingLogAnalyticsWorkspaceResourceGroupName
   ))
@@ -1419,7 +1419,7 @@ module logAnalyticsPrivateEndpoint './networking/private-endpoint.bicep' = if (n
 module applicationInsights './management_governance/application-insights.bicep' = {
   name: _applicationInsightsName
   scope: az.resourceGroup(resourceGroupScope(
-    _resourceGroupName,
+    resourceGroup.name,
     _azureReuseConfig.appInsightsReuse,
     _azureReuseConfig.existingAppInsightsResourceGroupName
   ))
@@ -1446,7 +1446,7 @@ resource cognitiveServicesOpenAIUserRole 'Microsoft.Authorization/roleDefinition
 module aiServices './ai_ml/ai-services.bicep' = {
   name: _aiServicesName
   scope: az.resourceGroup(resourceGroupScope(
-    _resourceGroupName,
+    resourceGroup.name,
     _azureReuseConfig.aiServicesReuse,
     _azureReuseConfig.existingAiServicesResourceGroupName
   ))
@@ -1542,7 +1542,7 @@ resource storageQueueDataContributorRole 'Microsoft.Authorization/roleDefinition
 module storageAccount './storage/storage-account.bicep' = {
   name: _storageAccountName
   scope: az.resourceGroup(resourceGroupScope(
-    _resourceGroupName,
+    resourceGroup.name,
     _azureReuseConfig.storageReuse,
     _azureReuseConfig.existingStorageResourceGroupName
   ))
@@ -1575,7 +1575,7 @@ module storageAccount './storage/storage-account.bicep' = {
 module storageContainer 'storage/storage-blob-container.bicep' = {
   name: '${storageAccount.name}-container-${_storageContainerName}'
   scope: az.resourceGroup(resourceGroupScope(
-    _resourceGroupName,
+    resourceGroup.name,
     _azureReuseConfig.storageReuse,
     _azureReuseConfig.existingStorageResourceGroupName
   ))
@@ -1677,7 +1677,7 @@ resource cosmosDbAccountContributorRole 'Microsoft.Authorization/roleDefinitions
 module cosmosDbAccount './databases/cosmos-db-account.bicep' = {
   name: _azureCosmosDbName
   scope: az.resourceGroup(resourceGroupScope(
-    _resourceGroupName,
+    resourceGroup.name,
     _azureReuseConfig.cosmosDbReuse,
     _azureReuseConfig.existingCosmosDbResourceGroupName
   ))
@@ -1700,7 +1700,7 @@ module cosmosDbAccount './databases/cosmos-db-account.bicep' = {
 module cosmosDbDatabase './databases/cosmos-db-database.bicep' = {
   name: _azureCosmosDatabaseName
   scope: az.resourceGroup(resourceGroupScope(
-    _resourceGroupName,
+    resourceGroup.name,
     _azureReuseConfig.cosmosDbReuse,
     _azureReuseConfig.existingCosmosDbResourceGroupName
   ))
@@ -1746,7 +1746,7 @@ resource acrPullRole 'Microsoft.Authorization/roleDefinitions@2022-05-01-preview
 module containerRegistry 'containers/container-registry.bicep' = {
   name: _containerRegistryName
   scope: az.resourceGroup(resourceGroupScope(
-    _resourceGroupName,
+    resourceGroup.name,
     _azureReuseConfig.containerRegistryReuse,
     _azureReuseConfig.existingContainerRegistryResourceGroupName
   ))
@@ -1787,7 +1787,7 @@ module containerRegistryPrivateEndpoint './networking/private-endpoint.bicep' = 
 module containerAppsEnvironment 'containers/container-apps-environment.bicep' = {
   name: _containerAppsEnvironmentName
   scope: az.resourceGroup(resourceGroupScope(
-    _resourceGroupName,
+    resourceGroup.name,
     _azureReuseConfig.containerAppsEnvironmentReuse,
     _azureReuseConfig.existingContainerAppsEnvironmentResourceGroupName
   ))
@@ -1833,7 +1833,7 @@ resource azureMLDataScientistRole 'Microsoft.Authorization/roleDefinitions@2022-
 module aiHub './ai_ml/ai-hub.bicep' = {
   name: _aiHubName
   scope: az.resourceGroup(resourceGroupScope(
-    _resourceGroupName,
+    resourceGroup.name,
     _azureReuseConfig.aiHubReuse,
     _azureReuseConfig.existingAiHubResourceGroupName
   ))
@@ -1884,7 +1884,7 @@ module aiHubPrivateEndpoint './networking/private-endpoint.bicep' = if (networkI
 module aiHubProject './ai_ml/ai-hub-project.bicep' = {
   name: _aiHubProjectName
   scope: az.resourceGroup(resourceGroupScope(
-    _resourceGroupName,
+    resourceGroup.name,
     _azureReuseConfig.aiHubReuse,
     _azureReuseConfig.existingAiHubResourceGroupName
   ))
@@ -1904,7 +1904,7 @@ module aiHubProject './ai_ml/ai-hub-project.bicep' = {
 module documentPipelineApp './apps/AIDocumentPipeline/app.bicep' = {
   name: applicationName
   scope: az.resourceGroup(resourceGroupScope(
-    _resourceGroupName,
+    resourceGroup.name,
     _azureReuseConfig.containerAppsEnvironmentReuse,
     _azureReuseConfig.existingContainerAppsEnvironmentResourceGroupName
   ))

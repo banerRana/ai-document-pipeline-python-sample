@@ -5,27 +5,20 @@ param
     [Parameter(Mandatory = $true)]
     [string]$Location,
     [switch]$IsLocal,
-    [switch]$SkipInfrastructure,
     [switch]$WhatIf
 )
 
 Write-Host "Starting environment setup..."
 
-if ($SkipInfrastructure) {
-    Write-Host "Skipping infrastructure deployment..."
-    $InfrastructureOutputs = Get-Content -Path './infra/scripts/InfrastructureOutputs.json' -Raw | ConvertFrom-Json
-}
-else {
-    Write-Host "Deploying infrastructure..."
-    $InfrastructureOutputs = (./infra/scripts/Deploy-Infrastructure.ps1 `
-            -DeploymentName $DeploymentName `
-            -Location $Location `
-            -WhatIf:$WhatIf)
+Write-Host "Deploying infrastructure..."
+$InfrastructureOutputs = (./infra/scripts/Deploy-Infrastructure.ps1 `
+        -DeploymentName $DeploymentName `
+        -Location $Location `
+        -WhatIf:$WhatIf)
 
-    if ($WhatIf) {
-        Write-Host "WhatIf mode is enabled. Exiting without deploying."
-        exit 0
-    }
+if ($WhatIf) {
+    Write-Host "WhatIf mode is enabled. Exiting without deploying."
+    exit 0
 }
 
 if (-not $InfrastructureOutputs) {
