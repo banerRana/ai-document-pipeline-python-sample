@@ -237,7 +237,7 @@ The repository contains a [devcontainer](./.devcontainer/README.md) that contain
 > [!NOTE]
 > After the environment has loaded, you may need to run the following command in the terminal to install the necessary Python dependencies: `pip --disable-pip-version-check --no-cache-dir install --user -r src/AIDocumentPipeline/requirements.txt`
 
-Once the Dev Container is up and running, continue to the [run the sample](#run-the-sample) section.
+Once the Dev Container is up and running, continue to the [deployment](#deployment) section.
 
 ### Setup on Local Machine
 
@@ -259,7 +259,7 @@ To setup a local development environment, follow these steps:
 > [!NOTE]
 > After the environment has loaded, you may need to run the following command in the terminal to install the necessary Python dependencies: `pip --disable-pip-version-check --no-cache-dir install --user -r src/AIDocumentPipeline/requirements.txt`
 
-Once the Dev Container is up and running, continue to the [run the sample](#run-the-sample) section.
+Once the Dev Container is up and running, continue to the [deployment](#deployment) section.
 
 ## Deployment
 
