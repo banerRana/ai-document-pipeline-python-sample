@@ -387,6 +387,35 @@ bash ./setup_environment.sh <DeploymentName> <Location>
 
 </details>
 
+#### Environment Network Isolation
+
+By default, the deployment will be configured to use public endpoints for all Azure resources, secured using Azure Managed Identity and Azure RBAC least privilege access with API key access disabled.
+
+To deploy the environment with network isolation using a virtual network and private endpoints, set the `AZURE_NETWORK_ISOLATION` environment variable to `true` or update the `core.bicepparam` file to set the `networkIsolation` parameter to `true`.
+
+This will deploy additional resources to the environment, including:
+
+- **Virtual Network (VNet)**:
+  - Created if `networkIsolation` is `true` (unless reusing an existing VNet).
+  - Address space configurable (default: `10.0.0.0/23`).
+- **Subnets within the VNet**:
+  - AI Services subnet, with private endpoints for:
+    - Key Vault
+    - App Configuration
+    - Storage
+    - Cosmos DB
+    - AI Foundry
+    - AI Services
+    - Container Registry
+    - Container Apps Environment
+  - Azure Container Apps Environment subnet, with delegation for `Microsoft.App/environments`.
+  - Bastion subnet, for the Bastion host VM.
+- **VPN Gateway** (optional):
+  - Deployed if `deployVPN` is `true` and `networkIsolation` is enabled.
+- **Bastion Host VM** (optional):
+  - Deployed if `deployVM` is `true` and `networkIsolation` is enabled.
+  - Includes Microsoft Entra ID authentication extension.
+
 ### Running the application locally
 
 For local development and testing in the devcontainer, you can run the application locally with `F5` debugging in Visual Studio Code.
