@@ -1,24 +1,6 @@
----
-name: Azure AI Document Processing Pipeline using Python Durable Functions
-description: A customizable template for building and deploying AI-powered document processing pipelines using Durable Functions orchestrations, incorporating Azure AI services and Azure OpenAI LLMs.
-languages:
-  - python
-  - bicep
-  - azdeveloper
-  - powershell
-products:
-  - azure
-  - ai-services
-  - azure-openai
-  - document-intelligence
-  - azure-blob-storage
-  - azure-queue-storage
-  - azure-container-apps
-  - azure-app-configuration
-  - azure-container-registry
-  - azure-key-vault
-page_type: sample
-urlFragment: azure-ai-document-processing-pipeline-python
+> [!IMPORTANT]
+> **This repo has been migrated to [azure/ai-document-processing-pipeline](https://github.com/azure/ai-document-processing-pipeline)**.
+
 ---
 
 # Azure AI Document Processing Pipeline using Python Durable Functions
